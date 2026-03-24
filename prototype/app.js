@@ -35,17 +35,15 @@ const scAfter = document.getElementById('scAfter');
 const scDelta = document.getElementById('scDelta');
 const scDeltaPct = document.getElementById('scDeltaPct');
 
-let assets = [];
 let positions = [];
 let annualDividendMap = {};
-let latestAllocation = [];
 
 function euro(v) { return `€ ${Number(v || 0).toLocaleString('de-DE', {maximumFractionDigits: 2})}`; }
 
 function switchView(viewId) {
   navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewId));
   views.forEach(v => v.classList.toggle('active', v.id === viewId));
-  title.textContent = viewId.charAt(0).toUpperCase() + viewId.slice(1);
+  title.textContent = viewId;
 }
 
 function parseCsv(text) {
@@ -58,26 +56,18 @@ function parseCsv(text) {
     return obj;
   });
 
-  assets = rows.map(r => ({
+  positions = rows.map(r => ({
     symbol: String(r.symbol || r.ticker || '').toUpperCase(),
-    name: String(r.name || ''),
     quantity: Number(r.quantity || 0),
     avg_cost: Number(r.avg_cost || 0),
     price: Number(r.price || 0),
-    annual_dividend_per_share: Number(r.annual_dividend_per_share || 0),
-    currency: String(r.currency || ''),
-    sector: String(r.sector || ''),
-    is_watchlist: String(r.is_watchlist || 'false').toLowerCase() === 'true',
-  })).filter(a => a.symbol);
-
-  positions = assets
-    .filter(a => !a.is_watchlist)
-    .map(a => ({ symbol: a.symbol, quantity: a.quantity, avg_cost: a.avg_cost, price: a.price }));
+  })).filter(p => p.symbol);
 
   annualDividendMap = {};
-  assets.forEach(a => { annualDividendMap[a.symbol] = a.annual_dividend_per_share || 0; });
-  renderMovers();
-  renderAllocation([]);
+  rows.forEach(r => {
+    const sym = String(r.symbol || r.ticker || '').toUpperCase();
+    annualDividendMap[sym] = Number(r.annual_dividend_per_share || 0);
+  });
 }
 
 async function loadPortfolio() {
@@ -87,8 +77,7 @@ async function loadPortfolio() {
   }
   const text = await portfolioFile.files[0].text();
   parseCsv(text);
-  const watchlistCount = assets.filter(a => a.is_watchlist).length;
-  loadStatus.textContent = `${positions.length} Positionen geladen, ${watchlistCount} Watchlist.`;
+  loadStatus.textContent = `${positions.length} Positionen geladen.`;
   await refreshMetrics();
   renderStocks([]);
 }
@@ -107,9 +96,7 @@ async function refreshMetrics() {
     kpiPnl.textContent = euro(data.unrealized_pnl);
     kpiCashflow.textContent = euro(data.monthly_dividend_forecast);
     kpiDividend.textContent = euro((data.monthly_dividend_forecast || 0) * 12);
-    latestAllocation = data.allocation || [];
-    renderStocks(latestAllocation);
-    renderAllocation(latestAllocation);
+    renderStocks(data.allocation || []);
   } catch (e) {
     loadStatus.textContent = `Backend Fehler: ${e.message}`;
   }
@@ -117,75 +104,11 @@ async function refreshMetrics() {
 
 function renderStocks(allocation) {
   const weights = Object.fromEntries(allocation.map(a => [a.symbol, a.weight_pct]));
-  const filterText = String(searchInput?.value || '').toLowerCase();
-  const visibleAssets = assets.filter(a => {
-    if (!filterText) return true;
-    return a.symbol.toLowerCase().includes(filterText) || a.name.toLowerCase().includes(filterText);
-  });
-
-  stocksTableBody.innerHTML = visibleAssets.map(a => {
-    const mv = a.quantity * a.price;
-    const w = a.is_watchlist ? 0 : (weights[a.symbol] || 0);
-    const status = a.is_watchlist ? "Watchlist" : "Im Portfolio";
-    return `<tr><td>${a.symbol}</td><td>${a.name || "-"}</td><td>${a.quantity}</td><td>${a.avg_cost}</td><td>${a.price}</td><td>${euro(mv)}</td><td>${w.toFixed(2)}%</td><td>${status}</td></tr>`;
-  }).join('') || '<tr><td colspan="8">Keine Daten geladen</td></tr>';
-}
-
-function renderAllocation(allocation) {
-  const portfolioAssets = assets.filter(a => !a.is_watchlist);
-  if (!portfolioAssets.length) {
-    donutPrimary?.setAttribute('stroke-dasharray', '0 100');
-    donutValue.textContent = '0%';
-    donutLabel.textContent = 'Keine Daten';
-    allocationList.innerHTML = '<span class="muted">Portfolio laden, um Verteilung zu sehen.</span>';
-    return;
-  }
-
-  const portfolioMarketValue = portfolioAssets.reduce((sum, a) => sum + (a.quantity * a.price), 0);
-  const bucketValues = {};
-  portfolioAssets.forEach(a => {
-    const key = a.sector || 'Unkategorisiert';
-    bucketValues[key] = (bucketValues[key] || 0) + (a.quantity * a.price);
-  });
-
-  const buckets = Object.entries(bucketValues)
-    .map(([name, value]) => ({ name, value, pct: portfolioMarketValue ? (value / portfolioMarketValue) * 100 : 0 }))
-    .sort((a, b) => b.pct - a.pct);
-
-  const lead = buckets[0];
-  donutPrimary?.setAttribute('stroke-dasharray', `${lead.pct.toFixed(1)} ${Math.max(0, 100 - lead.pct).toFixed(1)}`);
-  donutValue.textContent = `${lead.pct.toFixed(1)}%`;
-  donutLabel.textContent = lead.name;
-
-  allocationList.innerHTML = buckets.map(b => `
-    <div class="alloc-row">
-      <div>
-        <strong>${b.name}</strong>
-        <div class="bar"><i style="width:${Math.min(100, b.pct)}%"></i></div>
-      </div>
-      <div><strong>${b.pct.toFixed(2)}%</strong><span>${euro(b.value)}</span></div>
-    </div>
-  `).join('');
-}
-
-function renderMovers() {
-  const portfolioAssets = assets.filter(a => !a.is_watchlist);
-  const byMarketValue = [...portfolioAssets]
-    .sort((a, b) => (b.quantity * b.price) - (a.quantity * a.price))
-    .slice(0, 5);
-
-  const byPnl = [...portfolioAssets]
-    .map(a => ({ ...a, pnl: (a.price - a.avg_cost) * a.quantity }))
-    .sort((a, b) => a.pnl - b.pnl)
-    .slice(0, 5);
-
-  topAssetsBody.innerHTML = byMarketValue.map(a => `
-    <tr><td>${a.symbol} <small>${a.name || ''}</small></td><td>${euro(a.quantity * a.price)}</td></tr>
-  `).join('') || '<tr><td colspan="2">Keine Daten</td></tr>';
-
-  flopAssetsBody.innerHTML = byPnl.map(a => `
-    <tr><td>${a.symbol} <small>${a.name || ''}</small></td><td class="${a.pnl >= 0 ? 'pos' : 'neg'}">${euro(a.pnl)}</td></tr>
-  `).join('') || '<tr><td colspan="2">Keine Daten</td></tr>';
+  stocksTableBody.innerHTML = positions.map(p => {
+    const mv = p.quantity * p.price;
+    const w = weights[p.symbol] || 0;
+    return `<tr><td>${p.symbol}</td><td>${p.quantity}</td><td>${p.avg_cost}</td><td>${p.price}</td><td>${euro(mv)}</td><td>${w.toFixed(2)}%</td></tr>`;
+  }).join('') || '<tr><td colspan="6">Keine Daten geladen</td></tr>';
 }
 
 async function applyScenario() {
@@ -242,7 +165,6 @@ if (loadPortfolioBtn) loadPortfolioBtn.addEventListener('click', loadPortfolio);
 if (applyScenarioBtn) applyScenarioBtn.addEventListener('click', applyScenario);
 if (loadQuoteBtn) loadQuoteBtn.addEventListener('click', loadQuote);
 if (refreshEarningsBtn) refreshEarningsBtn.addEventListener('click', refreshEarnings);
-if (searchInput) searchInput.addEventListener('input', () => renderStocks(latestAllocation));
 
 deBtn?.addEventListener('click', () => { deBtn.classList.add('active'); enBtn.classList.remove('active'); });
 enBtn?.addEventListener('click', () => { enBtn.classList.add('active'); deBtn.classList.remove('active'); });

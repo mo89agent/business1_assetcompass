@@ -23,24 +23,13 @@ uvicorn backend.app:app --reload --port 9000
 In Dashboard upload CSV with header:
 
 ```csv
-symbol,name,quantity,avg_cost,price,annual_dividend_per_share,currency,sector,is_watchlist
-MSFT,Microsoft,18,312.00,425.30,3.00,USD,Software,false
-ORCL,Oracle,24,103.20,128.40,1.60,USD,Software,false
-CRM,Salesforce,0,0,301.10,0.00,USD,Software,true
-DOW,DOW Inc.,45,52.80,57.40,2.80,USD,Chemicals,false
-F3C.DE,SFC Energy,120,18.40,22.70,0.00,EUR,Energy,false
+symbol,quantity,avg_cost,price,annual_dividend_per_share
+AAPL,10,145,188,0.96
+MSFT,5,312,365,3.00
+VWCE,20,95,106,0.00
 ```
 
-This seeds dashboard KPIs and stocks list. Rows with `is_watchlist=true` are shown in list but excluded from portfolio metrics/scenario calculations.
-
-## UI layout notes
-
-The prototype uses a modern dark dashboard layout inspired by contemporary portfolio apps:
-- left navigation rail
-- top search/time-range controls
-- profile/KPI card
-- allocation donut + sector bars
-- Top 5 / Flop 5 movers tables
+This seeds dashboard KPIs and the stocks asset list.
 
 ## Scenario engine
 

@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Asset Compass – UI Prototype</title>
+  <title>Personal Wealth Management – UI Prototype</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="shell">
+  <div class="app">
     <aside class="sidebar">
-      <div class="brand">Asset Compass</div>
-      <nav class="side-nav">
+      <h1>Personal Wealth Management</h1>
+      <nav>
         <button class="nav active" data-view="dashboard">Dashboard</button>
-        <button class="nav" data-view="stocks">Assets</button>
+        <button class="nav" data-view="stocks">Aktien & ETFs</button>
         <button class="nav" data-view="asset">Asset Detail</button>
         <button class="nav" data-view="dividends">Dividenden</button>
         <button class="nav" data-view="news">News</button>
@@ -25,75 +25,25 @@
       </div>
     </aside>
 
-    <main class="main">
+    <main class="content">
       <header class="topbar">
         <h2 id="screenTitle">Dashboard</h2>
-        <div class="topbar-controls">
-          <input id="searchInput" class="search" placeholder="Suchen (Ticker, Name)" />
-          <div class="periods">
-            <button class="pill">1T</button>
-            <button class="pill">1W</button>
-            <button class="pill">1M</button>
-            <button class="pill active">1J</button>
-            <button class="pill">YTD</button>
-          </div>
-          <button class="cta" id="primaryAction">Asset hinzufügen</button>
-        </div>
+        <button class="cta" id="primaryAction">Asset hinzufügen</button>
       </header>
 
       <section id="dashboard" class="view active">
-        <div class="dash-grid">
-          <article class="card upload-card">
-            <h3>Portfolio laden (CSV)</h3>
-            <p>Format: <code>symbol,name,quantity,avg_cost,price,annual_dividend_per_share,currency,sector,is_watchlist</code></p>
-            <div class="upload-row">
-              <input type="file" id="portfolioFile" accept=".csv" />
-              <button id="loadPortfolioBtn" class="cta">Laden</button>
-            </div>
-            <small id="loadStatus">Noch kein Portfolio geladen.</small>
-          </article>
-
-          <article class="card profile-card">
-            <h3>Mein Vermögen</h3>
-            <p class="hero" id="kpiNetWorth">€ 0</p>
-            <div class="mini-kpis">
-              <div><span>Unrealized P/L</span><strong class="pos" id="kpiPnl">€ 0</strong></div>
-              <div><span>Monats-Cashflow</span><strong id="kpiCashflow">€ 0</strong></div>
-              <div><span>Dividenden (12M)</span><strong id="kpiDividend">€ 0</strong></div>
-            </div>
-          </article>
-
-          <article class="card allocation-card">
-            <h3>Assetklassen / Sektoren</h3>
-            <div class="allocation-layout">
-              <div class="donut-wrap">
-                <svg class="donut" viewBox="0 0 36 36">
-                  <path class="donut-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                  <path id="donutPrimary" class="donut-segment" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke-dasharray="0 100"/>
-                  <text x="18" y="18.3" class="donut-value" id="donutValue">0%</text>
-                  <text x="18" y="22.5" class="donut-label" id="donutLabel">Keine Daten</text>
-                </svg>
-              </div>
-              <div id="allocationList" class="allocation-list"></div>
-            </div>
-          </article>
-
-          <article class="card movers-card">
-            <div class="split-head">
-              <h3>Top 5</h3>
-              <h3>Flop 5</h3>
-            </div>
-            <div class="split-grid">
-              <table>
-                <thead><tr><th>Asset</th><th>Marktwert</th></tr></thead>
-                <tbody id="topAssetsBody"></tbody>
-              </table>
-              <table>
-                <thead><tr><th>Asset</th><th>P/L</th></tr></thead>
-                <tbody id="flopAssetsBody"></tbody>
-              </table>
-            </div>
-          </article>
+        <article class="card">
+          <h3>Start: Daten hochladen (CSV)</h3>
+          <p>Format: <code>symbol,quantity,avg_cost,price,annual_dividend_per_share</code></p>
+          <input type="file" id="portfolioFile" accept=".csv" />
+          <button id="loadPortfolioBtn" class="cta">Portfolio laden</button>
+          <small id="loadStatus">Noch kein Portfolio geladen.</small>
+        </article>
+        <div class="kpis">
+          <article class="card"><h3 data-i18n="networth">Gesamtvermögen</h3><p id="kpiNetWorth">€ 0</p></article>
+          <article class="card"><h3 data-i18n="day_change">Unrealized P/L</h3><p class="pos" id="kpiPnl">€ 0</p></article>
+          <article class="card"><h3 data-i18n="monthly_cashflow">Monats-Cashflow</h3><p id="kpiCashflow">€ 0</p></article>
+          <article class="card"><h3 data-i18n="dividend_forecast">Dividenden (12M)</h3><p id="kpiDividend">€ 0</p></article>
         </div>
       </section>
 
@@ -101,7 +51,7 @@
         <article class="card">
           <h3>Gesamtliste Assets (Aktien/ETFs)</h3>
           <table>
-            <thead><tr><th>Ticker</th><th>Name</th><th>Menge</th><th>Einstand</th><th>Kurs</th><th>Marktwert</th><th>Gewicht</th><th>Status</th></tr></thead>
+            <thead><tr><th>Ticker</th><th>Menge</th><th>Einstand</th><th>Kurs</th><th>Marktwert</th><th>Gewicht</th></tr></thead>
             <tbody id="stocksTableBody"></tbody>
           </table>
         </article>
@@ -110,6 +60,10 @@
       <section id="asset" class="view">
         <article class="card">
           <h3>Asset Detail – AAPL</h3>
+          <div class="grid2">
+            <div class="placeholder">Preis-Chart + Drawdown</div>
+            <div class="card"><h3>Kennzahlen</h3><ul><li>P/E: 28.4</li><li>Gross Margin: 46%</li><li>Dividend Yield: 0.5%</li></ul></div>
+          </div>
           <p><strong>Yahoo Quote:</strong> <span id="quoteOutput">nicht geladen</span></p>
           <button id="loadQuoteBtn" class="cta">Realtime Quote laden</button>
         </article>
@@ -136,7 +90,7 @@
               <label>Dividendenkürzung % <input id="divCut" type="range" min="0" max="60" value="10"></label>
               <button id="applyScenarioBtn" class="cta">Szenario anwenden</button>
             </div>
-            <div class="card soft">
+            <div class="card">
               <h3>Ergebnis</h3>
               <p><strong>Vorher:</strong> <span id="scBefore">€ 0</span></p>
               <p><strong>Nachher:</strong> <span id="scAfter">€ 0</span></p>
