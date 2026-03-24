@@ -31,7 +31,7 @@ from .core import (
 )
 from .storage import init_db, insert_earnings_result, list_holdings, list_recent_earnings, upsert_holding
 
-app = FastAPI(title="Vermögenslotse API", version="0.3.0")
+app = FastAPI(title="Personal Wealth Management API", version="0.3.0")
 
 
 @app.on_event("startup")

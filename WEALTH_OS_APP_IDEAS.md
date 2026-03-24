@@ -2,20 +2,20 @@
 
 ## 1) Produktname + Positionierung
 
-**Name:** **Vermögenslotse OS**
+**Name:** **Personal Wealth Management**
 
 **Tagline:** *Dein Finanz-Cockpit für Aktien, Immobilien, Krypto und Liquidität.*
 
 **Warum der Name funktioniert:**
 - Klarer Nutzen: „Lotse“ = Orientierung und Entscheidungshilfe.
 - Deutschsprachig, vertrauenswürdig, einfach merkbar.
-- Erweitert sich gut auf Mobile: „Vermögenslotse App“.
+- Erweitert sich gut auf Mobile: „Personal Wealth Management App“.
 
 ---
 
 ## 2) Kernprodukt-Idee (USP)
 
-Anders als klassische Portfolio-Tracker wird **Vermögenslotse OS** als **Entscheidungs-Betriebssystem** gebaut:
+Anders als klassische Portfolio-Tracker wird **Personal Wealth Management** als **Entscheidungs-Betriebssystem** gebaut:
 - Nicht nur *Was ist passiert?* (Tracking)
 - Sondern *Was bedeutet das?* (Kontext)
 - Und *Was sollte ich tun?* (Actionables)
@@ -180,7 +180,7 @@ Statt passiver Dashboards bekommt der Nutzer eine Inbox mit priorisierten Empfeh
 4. **PortfolioPilot 360**
 5. **Wertwerk OS**
 
-Empfehlung bleibt: **Vermögenslotse OS** (klar, vertrauensvoll, deutschsprachig stark).
+Empfehlung bleibt: **Personal Wealth Management** (klar, vertrauensvoll, deutschsprachig stark).
 
 ---
 

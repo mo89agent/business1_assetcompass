@@ -1,4 +1,4 @@
-# Vermögenslotse Backend (MVP Foundations)
+# Personal Wealth Management Backend (MVP Foundations)
 
 This backend provides portfolio math, DE tax MVP logic, Yahoo quotes, and holdings-based earnings ingestion.
 
