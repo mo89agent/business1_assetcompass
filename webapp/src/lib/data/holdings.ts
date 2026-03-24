@@ -1,0 +1,16 @@
+import type { PositionRow } from "@/lib/types";
+
+export async function getDemoPositions(): Promise<PositionRow[]> {
+  return [
+    { id: "1", accountId: "a1", accountName: "Flatex Depot", instrumentId: "i1", ticker: "VWRL", name: "Vanguard FTSE All-World", assetClass: "ETF", quantity: 420, avgCostBasis: 98.5, bookValue: 41370, currentPrice: 112.4, marketValue: 47208, unrealizedGain: 5838, unrealizedGainPct: 14.1, currency: "EUR", weight: 5.2 },
+    { id: "2", accountId: "a1", accountName: "Flatex Depot", instrumentId: "i2", ticker: "MSFT", name: "Microsoft Corp.", assetClass: "STOCK", quantity: 85, avgCostBasis: 295, bookValue: 25075, currentPrice: 378.5, marketValue: 32172, unrealizedGain: 7097, unrealizedGainPct: 28.3, currency: "USD", weight: 3.5 },
+    { id: "3", accountId: "a2", accountName: "Trade Republic", instrumentId: "i3", ticker: "NVDA", name: "NVIDIA Corp.", assetClass: "STOCK", quantity: 50, avgCostBasis: 420, bookValue: 21000, currentPrice: 618, marketValue: 30900, unrealizedGain: 9900, unrealizedGainPct: 47.1, currency: "USD", weight: 3.4 },
+    { id: "4", accountId: "a3", accountName: "Coinbase", instrumentId: "i4", ticker: "BTC", name: "Bitcoin", assetClass: "CRYPTO", quantity: 0.85, avgCostBasis: 38000, bookValue: 32300, currentPrice: 54200, marketValue: 46070, unrealizedGain: 13770, unrealizedGainPct: 42.6, currency: "USD", weight: 5.1 },
+    { id: "5", accountId: "a1", accountName: "Flatex Depot", instrumentId: "i5", ticker: "AAPL", name: "Apple Inc.", assetClass: "STOCK", quantity: 120, avgCostBasis: 155, bookValue: 18600, currentPrice: 189.5, marketValue: 22740, unrealizedGain: 4140, unrealizedGainPct: 22.3, currency: "USD", weight: 2.5 },
+    { id: "6", accountId: "a2", accountName: "Trade Republic", instrumentId: "i6", ticker: "XEON", name: "Xtrackers Euro Stoxx 50", assetClass: "ETF", quantity: 850, avgCostBasis: 41.2, bookValue: 35020, currentPrice: 48.5, marketValue: 41225, unrealizedGain: 6205, unrealizedGainPct: 17.7, currency: "EUR", weight: 4.5 },
+    { id: "7", accountId: "a3", accountName: "Coinbase", instrumentId: "i7", ticker: "ETH", name: "Ethereum", assetClass: "CRYPTO", quantity: 8.5, avgCostBasis: 1800, bookValue: 15300, currentPrice: 2280, marketValue: 19380, unrealizedGain: 4080, unrealizedGainPct: 26.7, currency: "USD", weight: 2.1 },
+    { id: "8", accountId: "a4", accountName: "DKB Tagesgeld", instrumentId: "i8", ticker: null, name: "EUR Cash — DKB Tagesgeld", assetClass: "CASH", quantity: 1, avgCostBasis: 85000, bookValue: 85000, currentPrice: 85000, marketValue: 85000, unrealizedGain: 0, unrealizedGainPct: 0, currency: "EUR", weight: 9.4 },
+    { id: "9", accountId: "a1", accountName: "Flatex Depot", instrumentId: "i9", ticker: "AMZN", name: "Amazon.com Inc.", assetClass: "STOCK", quantity: 45, avgCostBasis: 142, bookValue: 6390, currentPrice: 186, marketValue: 8370, unrealizedGain: 1980, unrealizedGainPct: 31.0, currency: "USD", weight: 0.9 },
+    { id: "10", accountId: "a5", accountName: "Xetra Gold", instrumentId: "i10", ticker: "4GLD", name: "Xetra-Gold ETC", assetClass: "GOLD", quantity: 300, avgCostBasis: 135, bookValue: 40500, currentPrice: 150, marketValue: 45000, unrealizedGain: 4500, unrealizedGainPct: 11.1, currency: "EUR", weight: 4.9 },
+  ];
+}

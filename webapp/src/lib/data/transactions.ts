@@ -1,0 +1,16 @@
+import type { TransactionRow } from "@/lib/types";
+
+export async function getDemoTransactions(): Promise<TransactionRow[]> {
+  return [
+    { id: "t1", type: "BUY", executedAt: "2026-03-20", accountName: "Flatex Depot", instrumentName: "Vanguard FTSE All-World", ticker: "VWRL", quantity: 10, price: 112.4, amount: -1124, currency: "EUR", fees: 3.9, taxes: 0, description: null, provenance: "manual", isVerified: true, isDuplicate: false },
+    { id: "t2", type: "DIVIDEND", executedAt: "2026-03-15", accountName: "Flatex Depot", instrumentName: "Microsoft Corp.", ticker: "MSFT", quantity: null, price: null, amount: 187.5, currency: "USD", fees: 0, taxes: 52.97, description: "Q1 2026 dividend", provenance: "manual", isVerified: true, isDuplicate: false },
+    { id: "t3", type: "SELL", executedAt: "2026-03-10", accountName: "Trade Republic", instrumentName: "NVIDIA Corp.", ticker: "NVDA", quantity: 5, price: 618, amount: 3090, currency: "USD", fees: 1.0, taxes: 0, description: null, provenance: "csv_import:trade_republic_export.csv", isVerified: false, isDuplicate: false },
+    { id: "t4", type: "DEPOSIT", executedAt: "2026-03-01", accountName: "DKB Tagesgeld", instrumentName: null, ticker: null, quantity: null, price: null, amount: 5000, currency: "EUR", fees: 0, taxes: 0, description: "Monthly savings transfer", provenance: "manual", isVerified: true, isDuplicate: false },
+    { id: "t5", type: "INTEREST_INCOME", executedAt: "2026-02-28", accountName: "DKB Tagesgeld", instrumentName: null, ticker: null, quantity: null, price: null, amount: 190, currency: "EUR", fees: 0, taxes: 37.37, description: "February interest", provenance: "csv_import:dkb_feb_2026.csv", isVerified: true, isDuplicate: false },
+    { id: "t6", type: "RENT_INCOME", executedAt: "2026-03-01", accountName: "Berliner Str. 12", instrumentName: null, ticker: null, quantity: null, price: null, amount: 1450, currency: "EUR", fees: 0, taxes: 0, description: "March rent — Apartment A", provenance: "manual", isVerified: true, isDuplicate: false },
+    { id: "t7", type: "STAKING_REWARD", executedAt: "2026-03-05", accountName: "Coinbase", instrumentName: "Ethereum", ticker: "ETH", quantity: 0.012, price: 2280, amount: 27.36, currency: "USD", fees: 0, taxes: 0, description: null, provenance: "api:coinbase", isVerified: true, isDuplicate: false },
+    { id: "t8", type: "FEE", executedAt: "2026-02-28", accountName: "Flatex Depot", instrumentName: null, ticker: null, quantity: null, price: null, amount: -12.5, currency: "EUR", fees: 12.5, taxes: 0, description: "Monthly depot fee", provenance: "csv_import:flatex_feb.csv", isVerified: true, isDuplicate: false },
+    { id: "t9", type: "LOAN_PAYMENT", executedAt: "2026-03-01", accountName: "DKB Mortgage", instrumentName: null, ticker: null, quantity: null, price: null, amount: -1820, currency: "EUR", fees: 0, taxes: 0, description: "Principal: €1,250 · Interest: €570", provenance: "manual", isVerified: true, isDuplicate: false },
+    { id: "t10", type: "BUY", executedAt: "2026-02-15", accountName: "Flatex Depot", instrumentName: "Apple Inc.", ticker: "AAPL", quantity: 20, price: 189.5, amount: -3790, currency: "USD", fees: 3.9, taxes: 0, description: null, provenance: "manual", isVerified: true, isDuplicate: false },
+  ];
+}
