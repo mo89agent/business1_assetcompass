@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Personal Wealth Management – UI Prototype</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <h1>Personal Wealth Management</h1>
+      <nav>
+        <button class="nav active" data-view="dashboard">Dashboard</button>
+        <button class="nav" data-view="stocks">Aktien & ETFs</button>
+        <button class="nav" data-view="asset">Asset Detail</button>
+        <button class="nav" data-view="dividends">Dividenden</button>
+        <button class="nav" data-view="news">News</button>
+        <button class="nav" data-view="earnings">Earnings</button>
+        <button class="nav" data-view="scenario">Szenarien</button>
+      </nav>
+      <div class="lang">
+        <button id="deBtn" class="lang-btn active">DE</button>
+        <button id="enBtn" class="lang-btn">EN</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <h2 id="screenTitle">Dashboard</h2>
+        <button class="cta" id="primaryAction">Asset hinzufügen</button>
+      </header>
+
+      <section id="dashboard" class="view active">
+        <article class="card">
+          <h3>Start: Daten hochladen (CSV)</h3>
+          <p>Format: <code>symbol,quantity,avg_cost,price,annual_dividend_per_share</code></p>
+          <input type="file" id="portfolioFile" accept=".csv" />
+          <button id="loadPortfolioBtn" class="cta">Portfolio laden</button>
+          <small id="loadStatus">Noch kein Portfolio geladen.</small>
+        </article>
+        <div class="kpis">
+          <article class="card"><h3 data-i18n="networth">Gesamtvermögen</h3><p id="kpiNetWorth">€ 0</p></article>
+          <article class="card"><h3 data-i18n="day_change">Unrealized P/L</h3><p class="pos" id="kpiPnl">€ 0</p></article>
+          <article class="card"><h3 data-i18n="monthly_cashflow">Monats-Cashflow</h3><p id="kpiCashflow">€ 0</p></article>
+          <article class="card"><h3 data-i18n="dividend_forecast">Dividenden (12M)</h3><p id="kpiDividend">€ 0</p></article>
+        </div>
+      </section>
+
+      <section id="stocks" class="view">
+        <article class="card">
+          <h3>Gesamtliste Assets (Aktien/ETFs)</h3>
+          <table>
+            <thead><tr><th>Ticker</th><th>Menge</th><th>Einstand</th><th>Kurs</th><th>Marktwert</th><th>Gewicht</th></tr></thead>
+            <tbody id="stocksTableBody"></tbody>
+          </table>
+        </article>
+      </section>
+
+      <section id="asset" class="view">
+        <article class="card">
+          <h3>Asset Detail – AAPL</h3>
+          <div class="grid2">
+            <div class="placeholder">Preis-Chart + Drawdown</div>
+            <div class="card"><h3>Kennzahlen</h3><ul><li>P/E: 28.4</li><li>Gross Margin: 46%</li><li>Dividend Yield: 0.5%</li></ul></div>
+          </div>
+          <p><strong>Yahoo Quote:</strong> <span id="quoteOutput">nicht geladen</span></p>
+          <button id="loadQuoteBtn" class="cta">Realtime Quote laden</button>
+        </article>
+      </section>
+
+      <section id="dividends" class="view"><article class="card"><h3>Dividenden Forecast</h3><div class="placeholder">wird aus Portfolio berechnet</div></article></section>
+      <section id="news" class="view"><article class="card"><h3>News & Priorisierung</h3><div class="placeholder">nächster Schritt</div></article></section>
+
+      <section id="earnings" class="view">
+        <article class="card">
+          <h3>Earnings Inbox (nur Holdings)</h3>
+          <p><button id="refreshEarningsBtn" class="cta">Holdings Earnings aktualisieren</button></p>
+          <pre id="earningsOutput">Noch keine Daten geladen.</pre>
+        </article>
+      </section>
+
+      <section id="scenario" class="view">
+        <article class="card">
+          <h3>Szenario Tool (mathematisch)</h3>
+          <div class="grid2">
+            <div>
+              <label>Aktienschock % <input id="equityShock" type="range" min="0" max="60" value="20"></label>
+              <label>Zinsschock % <input id="rateShock" type="range" min="0" max="6" step="0.25" value="1.5"></label>
+              <label>Dividendenkürzung % <input id="divCut" type="range" min="0" max="60" value="10"></label>
+              <button id="applyScenarioBtn" class="cta">Szenario anwenden</button>
+            </div>
+            <div class="card">
+              <h3>Ergebnis</h3>
+              <p><strong>Vorher:</strong> <span id="scBefore">€ 0</span></p>
+              <p><strong>Nachher:</strong> <span id="scAfter">€ 0</span></p>
+              <p><strong>Delta:</strong> <span id="scDelta">€ 0</span></p>
+              <p><strong>Delta %:</strong> <span id="scDeltaPct">0%</span></p>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
