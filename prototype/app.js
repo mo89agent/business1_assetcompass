@@ -13,6 +13,13 @@ const kpiPnl = document.getElementById('kpiPnl');
 const kpiCashflow = document.getElementById('kpiCashflow');
 const kpiDividend = document.getElementById('kpiDividend');
 const stocksTableBody = document.getElementById('stocksTableBody');
+const searchInput = document.getElementById('searchInput');
+const donutPrimary = document.getElementById('donutPrimary');
+const donutValue = document.getElementById('donutValue');
+const donutLabel = document.getElementById('donutLabel');
+const allocationList = document.getElementById('allocationList');
+const topAssetsBody = document.getElementById('topAssetsBody');
+const flopAssetsBody = document.getElementById('flopAssetsBody');
 
 const quoteOutput = document.getElementById('quoteOutput');
 const loadQuoteBtn = document.getElementById('loadQuoteBtn');

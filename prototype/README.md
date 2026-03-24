@@ -47,3 +47,9 @@ Mathematical assumptions (MVP):
 Use this sample upload file to test end-to-end:
 
 - `testdata/sample_portfolio.csv`
+
+## Hosted synced browser preview (no localhost)
+
+If localhost doesn't work for you, use GitHub Pages deployment guide:
+
+- `DEPLOY_GITHUB_PAGES.md`
