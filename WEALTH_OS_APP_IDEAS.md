@@ -7,7 +7,7 @@
 **Tagline:** *Dein Finanz-Cockpit für Aktien, Immobilien, Krypto und Liquidität.*
 
 **Warum der Name funktioniert:**
-- Klarer Nutzen: „Lotse“ = Orientierung und Entscheidungshilfe.
+- Klarer Nutzen: „Personal Wealth Management“ kommuniziert den Zweck direkt und international verständlich.
 - Deutschsprachig, vertrauenswürdig, einfach merkbar.
 - Erweitert sich gut auf Mobile: „Personal Wealth Management App“.
 
