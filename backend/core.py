@@ -159,3 +159,57 @@ def de_capital_gains_tax(
         "total_tax": round(total_tax, 2),
         "net_after_tax": round(net_after_tax, 2),
     }
+
+
+def apply_equity_scenario(
+    positions: Iterable[Position],
+    equity_shock_pct: float,
+    rate_shock_pct: float,
+    dividend_cut_pct: float,
+) -> dict:
+    """
+    Simplified scenario model for MVP:
+    - equity shock directly affects price level
+    - rate shock adds additional valuation compression (0.5% price impact per +1% rates)
+    - dividend cut reduces forecast dividends
+    """
+    positions = list(positions)
+    before_value = portfolio_market_value(positions)
+
+    rate_impact_pct = max(rate_shock_pct, 0.0) * 0.5
+    total_price_impact_pct = equity_shock_pct + rate_impact_pct
+    price_multiplier = max(0.0, 1 - total_price_impact_pct / 100)
+
+    projected = []
+    for p in positions:
+        new_price = round(p.price * price_multiplier, 4)
+        new_value = round(p.quantity * new_price, 2)
+        projected.append(
+            {
+                "symbol": p.symbol,
+                "quantity": p.quantity,
+                "old_price": p.price,
+                "new_price": new_price,
+                "old_value": round(p.quantity * p.price, 2),
+                "new_value": new_value,
+            }
+        )
+
+    after_value = round(sum(x["new_value"] for x in projected), 2)
+    delta = round(after_value - before_value, 2)
+    delta_pct = round((delta / before_value) * 100, 4) if before_value else 0.0
+
+    return {
+        "assumptions": {
+            "equity_shock_pct": equity_shock_pct,
+            "rate_shock_pct": rate_shock_pct,
+            "rate_impact_pct": rate_impact_pct,
+            "dividend_cut_pct": dividend_cut_pct,
+            "price_multiplier": round(price_multiplier, 6),
+        },
+        "before_value": before_value,
+        "after_value": after_value,
+        "delta": delta,
+        "delta_pct": delta_pct,
+        "projected_positions": projected,
+    }

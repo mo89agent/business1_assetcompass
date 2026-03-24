@@ -19,6 +19,7 @@ from .core import (
     Position,
     ReturnPeriod,
     allocation_weights,
+    apply_equity_scenario,
     de_capital_gains_tax,
     irr_newton,
     monthly_dividend_forecast,
@@ -95,6 +96,14 @@ class HoldingIn(BaseModel):
     earnings_url: str | None = None
 
 
+
+class ScenarioIn(BaseModel):
+    positions: List[PositionIn]
+    equity_shock_pct: float = 0.0
+    rate_shock_pct: float = 0.0
+    dividend_cut_pct: float = 0.0
+
+
 @app.get("/health")
 def health() -> dict:
     return {"ok": True}
@@ -148,6 +157,18 @@ def portfolio_twr(periods: List[ReturnPeriodIn]) -> dict:
 def portfolio_attribution(data: AttributionIn) -> dict:
     return simple_attribution(data.start_value, data.end_value, data.net_flows)
 
+
+
+
+@app.post("/api/scenario/apply")
+def scenario_apply(data: ScenarioIn) -> dict:
+    positions = [Position(**p.model_dump()) for p in data.positions]
+    return apply_equity_scenario(
+        positions=positions,
+        equity_shock_pct=data.equity_shock_pct,
+        rate_shock_pct=data.rate_shock_pct,
+        dividend_cut_pct=data.dividend_cut_pct,
+    )
 
 @app.post("/api/tax/de/capital_gains")
 def tax_de_capital_gains(data: DeTaxIn) -> dict:

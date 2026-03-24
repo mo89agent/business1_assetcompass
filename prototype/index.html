@@ -32,37 +32,27 @@
       </header>
 
       <section id="dashboard" class="view active">
+        <article class="card">
+          <h3>Start: Daten hochladen (CSV)</h3>
+          <p>Format: <code>symbol,quantity,avg_cost,price,annual_dividend_per_share</code></p>
+          <input type="file" id="portfolioFile" accept=".csv" />
+          <button id="loadPortfolioBtn" class="cta">Portfolio laden</button>
+          <small id="loadStatus">Noch kein Portfolio geladen.</small>
+        </article>
         <div class="kpis">
-          <article class="card"><h3 data-i18n="networth">Gesamtvermögen</h3><p>€ 1.248.000</p></article>
-          <article class="card"><h3 data-i18n="day_change">Tagesveränderung</h3><p class="pos">+1.2%</p></article>
-          <article class="card"><h3 data-i18n="monthly_cashflow">Monats-Cashflow</h3><p>€ 3.450</p></article>
-          <article class="card"><h3 data-i18n="dividend_forecast">Dividenden (12M)</h3><p>€ 14.200</p></article>
-        </div>
-        <div class="grid2">
-          <article class="card tall"><h3 data-i18n="trend">Net-Worth Verlauf</h3><div class="placeholder">Line Chart (Portfolio, Benchmark, Cash)</div></article>
-          <article class="card tall"><h3 data-i18n="allocation">Asset Allocation</h3><div class="placeholder">Donut Chart (Stocks/RE/Crypto/Cash)</div></article>
-        </div>
-        <div class="grid2">
-          <article class="card"><h3>Top Movers</h3><ul><li>MSFT +3.1%</li><li>AAPL +2.4%</li><li>ASML -1.2%</li></ul></article>
-          <article class="card"><h3>Decision Inbox</h3><ul><li>Cash Quote unter Zielbereich</li><li>Klumpenrisiko US-Tech 46%</li><li>Earnings diese Woche: AAPL</li></ul></article>
+          <article class="card"><h3 data-i18n="networth">Gesamtvermögen</h3><p id="kpiNetWorth">€ 0</p></article>
+          <article class="card"><h3 data-i18n="day_change">Unrealized P/L</h3><p class="pos" id="kpiPnl">€ 0</p></article>
+          <article class="card"><h3 data-i18n="monthly_cashflow">Monats-Cashflow</h3><p id="kpiCashflow">€ 0</p></article>
+          <article class="card"><h3 data-i18n="dividend_forecast">Dividenden (12M)</h3><p id="kpiDividend">€ 0</p></article>
         </div>
       </section>
 
       <section id="stocks" class="view">
         <article class="card">
-          <h3>Aktien & ETFs Overview</h3>
-          <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
-            <article class="card"><h3>Depotwert</h3><p>€ 612.300</p></article>
-            <article class="card"><h3>YTD</h3><p class="pos">+8.7%</p></article>
-            <article class="card"><h3>Div. Yield</h3><p>2.4%</p></article>
-          </div>
+          <h3>Gesamtliste Assets (Aktien/ETFs)</h3>
           <table>
-            <thead><tr><th>Ticker</th><th>Name</th><th>Gew.</th><th>Einstand</th><th>Kurs</th><th>P/L</th></tr></thead>
-            <tbody>
-              <tr><td>AAPL</td><td>Apple</td><td>14%</td><td>145</td><td>188</td><td class="pos">+29.7%</td></tr>
-              <tr><td>VWCE</td><td>FTSE All-World</td><td>38%</td><td>95</td><td>106</td><td class="pos">+11.5%</td></tr>
-              <tr><td>MSFT</td><td>Microsoft</td><td>9%</td><td>312</td><td>365</td><td class="pos">+17.0%</td></tr>
-            </tbody>
+            <thead><tr><th>Ticker</th><th>Menge</th><th>Einstand</th><th>Kurs</th><th>Marktwert</th><th>Gewicht</th></tr></thead>
+            <tbody id="stocksTableBody"></tbody>
           </table>
         </article>
       </section>
@@ -79,31 +69,8 @@
         </article>
       </section>
 
-      <section id="dividends" class="view">
-        <article class="card">
-          <h3>Dividenden Forecast</h3>
-          <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
-            <article class="card"><h3>12M Brutto</h3><p>€ 14.200</p></article>
-            <article class="card"><h3>12M Netto (DE)</h3><p>€ 10.980</p></article>
-            <article class="card"><h3>Monats Ø</h3><p>€ 915</p></article>
-          </div>
-          <div class="placeholder">Monats-Heatmap + Ex-Date Kalender</div>
-        </article>
-      </section>
-
-      <section id="news" class="view">
-        <article class="card">
-          <h3>News & Priorisierung</h3>
-          <table>
-            <thead><tr><th>Headline</th><th>Relevanz</th><th>Impact</th><th>Holding</th></tr></thead>
-            <tbody>
-              <tr><td>NVIDIA Earnings beat</td><td>92</td><td>High</td><td>NVDA</td></tr>
-              <tr><td>Apple Guidance Update</td><td>88</td><td>High</td><td>AAPL</td></tr>
-              <tr><td>EZB Zinssignal</td><td>67</td><td>Medium</td><td>Portfolio-wide</td></tr>
-            </tbody>
-          </table>
-        </article>
-      </section>
+      <section id="dividends" class="view"><article class="card"><h3>Dividenden Forecast</h3><div class="placeholder">wird aus Portfolio berechnet</div></article></section>
+      <section id="news" class="view"><article class="card"><h3>News & Priorisierung</h3><div class="placeholder">nächster Schritt</div></article></section>
 
       <section id="earnings" class="view">
         <article class="card">
@@ -115,14 +82,21 @@
 
       <section id="scenario" class="view">
         <article class="card">
-          <h3>Szenario Tool</h3>
+          <h3>Szenario Tool (mathematisch)</h3>
           <div class="grid2">
             <div>
-              <label>Marktcrash <input type="range" min="0" max="50" value="20"></label>
-              <label>Zinsanstieg <input type="range" min="0" max="5" step="0.25" value="1.5"></label>
-              <label>Dividendenkürzung <input type="range" min="0" max="50" value="10"></label>
+              <label>Aktienschock % <input id="equityShock" type="range" min="0" max="60" value="20"></label>
+              <label>Zinsschock % <input id="rateShock" type="range" min="0" max="6" step="0.25" value="1.5"></label>
+              <label>Dividendenkürzung % <input id="divCut" type="range" min="0" max="60" value="10"></label>
+              <button id="applyScenarioBtn" class="cta">Szenario anwenden</button>
             </div>
-            <div class="card"><h3>Ergebnis</h3><p><strong>Delta Vermögen:</strong> -8.4%</p><p><strong>Delta Cashflow:</strong> -12.1%</p><p><strong>Risikoampel:</strong> Gelb</p></div>
+            <div class="card">
+              <h3>Ergebnis</h3>
+              <p><strong>Vorher:</strong> <span id="scBefore">€ 0</span></p>
+              <p><strong>Nachher:</strong> <span id="scAfter">€ 0</span></p>
+              <p><strong>Delta:</strong> <span id="scDelta">€ 0</span></p>
+              <p><strong>Delta %:</strong> <span id="scDeltaPct">0%</span></p>
+            </div>
           </div>
         </article>
       </section>

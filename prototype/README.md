@@ -2,19 +2,14 @@
 
 ## Start frontend locally
 
-From repository root:
-
 ```bash
 python3 -m http.server 8000
 ```
 
 Open:
-
 - http://localhost:8000/prototype/
 
-## Optional: enable backend integrations
-
-In a second terminal:
+## Start backend (required for metrics/scenario/quotes/earnings)
 
 ```bash
 python3 -m venv .venv
@@ -23,22 +18,32 @@ pip install -r backend/requirements.txt
 uvicorn backend.app:app --reload --port 9000
 ```
 
-Then in UI:
-- `Asset Detail` → **Realtime Quote laden**
-- `Earnings` → **Holdings Earnings aktualisieren**
+## CSV upload for dashboard seeding
 
-### Seed holdings for earnings (example)
+In Dashboard upload CSV with header:
 
-```bash
-curl -X POST http://localhost:9000/api/holdings/upsert \
-  -H "Content-Type: application/json" \
-  -d '{"symbol":"AAPL","name":"Apple","quantity":10,"earnings_url":"https://investor.apple.com"}'
+```csv
+symbol,quantity,avg_cost,price,annual_dividend_per_share
+AAPL,10,145,188,0.96
+MSFT,5,312,365,3.00
+VWCE,20,95,106,0.00
 ```
 
-## Zero-setup fallback (no terminal)
+This seeds dashboard KPIs and the stocks asset list.
 
-If local server commands fail on your machine, open this file directly in your browser:
+## Scenario engine
 
-- `UI_PREVIEW_STANDALONE.html`
+In `Szenarien`, click `Szenario anwenden`.
+Backend endpoint used:
+- `POST /api/scenario/apply`
 
-This standalone file contains inline CSS/JS and does not require Python, Node, or terminal setup.
+Mathematical assumptions (MVP):
+- Total price impact % = equity_shock_pct + (rate_shock_pct * 0.5)
+- New price = old_price * (1 - total_price_impact%)
+- Portfolio delta computed from sum of projected position values
+
+## Testfile
+
+Use this sample upload file to test end-to-end:
+
+- `testdata/sample_portfolio.csv`

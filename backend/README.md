@@ -15,6 +15,7 @@ This backend provides portfolio math, DE tax MVP logic, Yahoo quotes, and holdin
 - `POST /api/portfolio/xirr`
 - `POST /api/portfolio/twr`
 - `POST /api/portfolio/attribution`
+- `POST /api/scenario/apply`
 
 ### Tax (DE first)
 
@@ -54,3 +55,10 @@ Open API docs:
 - Yahoo endpoint availability and data policy may change.
 - Broker APIs are broker-specific; CSV parse/normalize is neutral fallback.
 - DE tax endpoint is simplified MVP logic and not tax advice.
+
+## Run tests
+
+```bash
+pip install -r backend/requirements-dev.txt
+pytest backend/tests -q
+```
