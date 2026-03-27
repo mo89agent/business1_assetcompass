@@ -8,6 +8,9 @@ webapp/.next/
 webapp/.env
 webapp/.env.local
 webapp/src/generated/
+webapp/prisma/dev.db
+webapp/prisma/*.db-shm
+webapp/prisma/*.db-wal
 
 # OS
 .DS_Store

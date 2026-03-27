@@ -1,12 +1,12 @@
 // Seed file — creates a demo workspace with realistic data
-// Run with: npx prisma db seed
-// Requires: DATABASE_URL pointing to a running PostgreSQL instance
+// Run with: npx run db:seed
 
 import { PrismaClient } from "../src/generated/prisma";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import * as bcrypt from "bcryptjs";
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? "" });
+const url = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
+const adapter = new PrismaBetterSqlite3({ url });
 const db = new PrismaClient({ adapter });
 
 async function main() {

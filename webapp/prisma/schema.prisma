@@ -10,7 +10,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 // ============================================================
@@ -330,9 +330,9 @@ model Position {
   workspaceId  String
   accountId    String
   instrumentId String
-  quantity     Decimal   @db.Decimal(28, 10)
-  avgCostBasis Decimal   @db.Decimal(28, 10)
-  bookValue    Decimal   @db.Decimal(28, 10)
+  quantity     Decimal  
+  avgCostBasis Decimal  
+  bookValue    Decimal  
   currency     String
   openedAt     DateTime?
   closedAt     DateTime?
@@ -352,10 +352,10 @@ model TaxLot {
   positionId    String
   transactionId String
   acquiredAt    DateTime
-  quantity      Decimal   @db.Decimal(28, 10)
-  remainingQty  Decimal   @db.Decimal(28, 10)
-  costPerUnit   Decimal   @db.Decimal(28, 10)
-  totalCost     Decimal   @db.Decimal(28, 10)
+  quantity      Decimal  
+  remainingQty  Decimal  
+  costPerUnit   Decimal  
+  totalCost     Decimal  
   currency      String
   closed        Boolean   @default(false)
   closedAt      DateTime?
@@ -375,14 +375,14 @@ model Transaction {
   accountId    String
   instrumentId String?
   type         TransactionType
-  quantity     Decimal?        @db.Decimal(28, 10)
-  price        Decimal?        @db.Decimal(28, 10)
-  amount       Decimal         @db.Decimal(28, 10)
+  quantity     Decimal?       
+  price        Decimal?       
+  amount       Decimal        
   currency     String
-  amountBase   Decimal?        @db.Decimal(28, 10)
-  fxRate       Decimal?        @db.Decimal(18, 8)
-  fees         Decimal         @db.Decimal(28, 10) @default(0)
-  taxes        Decimal         @db.Decimal(28, 10) @default(0)
+  amountBase   Decimal?       
+  fxRate       Decimal?       
+  fees         Decimal         @default(0)
+  taxes        Decimal         @default(0)
   feesCurrency String?
   executedAt   DateTime
   settledAt    DateTime?
@@ -398,7 +398,7 @@ model Transaction {
   isDeleted       Boolean @default(false)
   description     String?
   notes           String?
-  tags            String[]
+  tags            String   @default("") // comma-separated, SQLite compat
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -432,16 +432,16 @@ model Property {
   buildYear           Int?
   energyClass         String?
   acquisitionDate     DateTime?
-  acquisitionPrice    Decimal?  @db.Decimal(28, 10)
+  acquisitionPrice    Decimal? 
   acquisitionCurrency String    @default("EUR")
-  ancillaryCosts      Decimal?  @db.Decimal(28, 10)
-  currentValue        Decimal?  @db.Decimal(28, 10)
+  ancillaryCosts      Decimal? 
+  currentValue        Decimal? 
   currentValueDate    DateTime?
-  targetRentMonthly   Decimal?  @db.Decimal(28, 10)
-  actualRentMonthly   Decimal?  @db.Decimal(28, 10)
+  targetRentMonthly   Decimal? 
+  actualRentMonthly   Decimal? 
   vacancyRate         Float?    @default(0.0)
-  operatingCostsMonthly Decimal? @db.Decimal(28, 10)
-  maintenanceReserve    Decimal? @db.Decimal(28, 10)
+  operatingCostsMonthly Decimal?
+  maintenanceReserve    Decimal?
   notes               String?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
@@ -459,11 +459,11 @@ model LeaseContract {
   propertyId  String
   tenantName  String?
   unit        String?
-  rentMonthly Decimal   @db.Decimal(28, 10)
+  rentMonthly Decimal  
   currency    String    @default("EUR")
   startDate   DateTime
   endDate     DateTime?
-  deposit     Decimal?  @db.Decimal(28, 10)
+  deposit     Decimal? 
   isActive    Boolean   @default(true)
   notes       String?
   createdAt   DateTime  @default(now())
@@ -478,7 +478,7 @@ model CapexItem {
   propertyId  String
   description String
   date        DateTime
-  amount      Decimal  @db.Decimal(28, 10)
+  amount      Decimal 
   currency    String   @default("EUR")
   category    String?
   notes       String?
@@ -499,13 +499,13 @@ model LoanDetails {
   propertyId         String?
   lenderName         String?
   loanType           String
-  principalOriginal  Decimal   @db.Decimal(28, 10)
-  principalRemaining Decimal   @db.Decimal(28, 10)
+  principalOriginal  Decimal  
+  principalRemaining Decimal  
   currency           String    @default("EUR")
   interestRate       Float
   isFixedRate        Boolean   @default(true)
   fixedRateUntil     DateTime?
-  monthlyPayment     Decimal?  @db.Decimal(28, 10)
+  monthlyPayment     Decimal? 
   amortizationYears  Float?
   startDate          DateTime?
   maturityDate       DateTime?
@@ -528,7 +528,7 @@ model Valuation {
   id          String          @id @default(cuid())
   workspaceId String
   accountId   String
-  value       Decimal         @db.Decimal(28, 10)
+  value       Decimal        
   currency    String
   valuedAt    DateTime
   source      ValuationSource @default(MANUAL)
@@ -545,7 +545,7 @@ model PricePoint {
   id           String   @id @default(cuid())
   workspaceId  String
   instrumentId String
-  price        Decimal  @db.Decimal(28, 10)
+  price        Decimal 
   currency     String
   date         DateTime
   source       String
@@ -575,7 +575,7 @@ model Document {
   checksum    String?
   importJobId String?
   description String?
-  tags        String[]
+  tags        String   @default("") // comma-separated, SQLite compat
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
@@ -671,8 +671,8 @@ model ForecastAssumption {
   cryptoReturnAnnual     Float    @default(0.15)
   cashReturnAnnual       Float    @default(0.025)
   inflationRate          Float    @default(0.02)
-  annualContribution     Decimal  @db.Decimal(28, 10) @default(0)
-  annualWithdrawal       Decimal  @db.Decimal(28, 10) @default(0)
+  annualContribution     Decimal  @default(0)
+  annualWithdrawal       Decimal  @default(0)
   contributionGrowthRate Float    @default(0.03)
   avgFeeRate             Float    @default(0.005)
   effectiveTaxRate       Float    @default(0.265)
