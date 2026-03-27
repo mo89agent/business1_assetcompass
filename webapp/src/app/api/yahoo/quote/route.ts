@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const quotes = results
       .map((r, i) =>
         r.status === "fulfilled"
-          ? { ...r.value, _symbol: tickers[i] }
+          ? { ...(r.value as Record<string, unknown>), _symbol: tickers[i] }
           : { _symbol: tickers[i], error: true }
       )
       .filter((q) => !("error" in q));

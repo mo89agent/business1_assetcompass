@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { cn, formatCurrency, formatPercent, formatNumber, gainColor, gainBg, ASSET_CLASS_LABELS, ASSET_CLASS_COLORS } from "@/lib/utils";
 import type { PositionRow } from "@/lib/types";
 
@@ -11,6 +12,7 @@ interface HoldingsTableProps {
 type SortKey = "name" | "marketValue" | "unrealizedGainPct" | "weight" | "assetClass";
 
 export function HoldingsTable({ positions }: HoldingsTableProps) {
+  const router = useRouter();
   const [sort, setSort] = useState<SortKey>("marketValue");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [filter, setFilter] = useState<string | null>(null);
@@ -110,7 +112,11 @@ export function HoldingsTable({ positions }: HoldingsTableProps) {
 
           <tbody className="divide-y divide-slate-50">
             {sorted.map((pos) => (
-              <tr key={pos.id} className="hover:bg-slate-50/50 transition-colors group cursor-pointer">
+              <tr
+                key={pos.id}
+                className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
+                onClick={() => router.push(`/dashboard/holdings/${pos.id}`)}
+              >
                 {/* Asset name */}
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">

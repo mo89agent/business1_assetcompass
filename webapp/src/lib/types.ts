@@ -4,6 +4,23 @@
 // (Decimal → number, Date → string for client components)
 // ============================================================
 
+// ─── Data provenance ─────────────────────────────────────────
+export type SourceType =
+  | "manual"        // user entered directly in UI
+  | "import"        // parsed from an uploaded file
+  | "yahoo"         // fetched from Yahoo Finance API
+  | "ecb"           // European Central Bank FX rates
+  | "estimated";    // computed from other data with assumptions
+
+export interface SourceRef {
+  type: SourceType;
+  label: string;             // human-readable: "Flatex CSV · Zeile 47"
+  importFile?: string;       // filename if source = import
+  importRow?: number;        // row number if source = import
+  fetchedAt?: string;        // ISO datetime if source = API
+  effectiveAt?: string;      // the date the value is valid as-of
+}
+
 export type AssetClass =
   | "STOCK"
   | "ETF"
@@ -137,8 +154,11 @@ export interface TransactionRow {
   id: string;
   type: TransactionType;
   executedAt: string;
+  settledAt?: string | null;
   accountName: string;
+  accountId?: string;
   instrumentName: string | null;
+  instrumentId?: string | null;
   ticker: string | null;
   quantity: number | null;
   price: number | null;
@@ -147,9 +167,14 @@ export interface TransactionRow {
   fees: number;
   taxes: number;
   description: string | null;
-  provenance: string | null;
+  // Provenance (replaces the raw string `provenance` field)
+  source: SourceRef;
+  // Review state
   isVerified: boolean;
+  verifiedAt?: string | null;
   isDuplicate: boolean;
+  duplicateOfId?: string | null;
+  reviewNote?: string | null;
 }
 
 // ─── Income / cashflow ───────────────────────────────────────

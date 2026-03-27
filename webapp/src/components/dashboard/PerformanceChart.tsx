@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import {
   AreaChart,
   Area,
@@ -18,10 +19,26 @@ interface PerformanceChartProps {
 }
 
 const PERIODS = ["1M", "3M", "6M", "1Y", "All"] as const;
+type Period = typeof PERIODS[number];
+
+function filterByPeriod(data: PerformancePoint[], period: Period): PerformancePoint[] {
+  if (period === "All" || data.length === 0) return data;
+  const now = new Date(data[data.length - 1].date);
+  const cutoff = new Date(now);
+  if (period === "1M") cutoff.setMonth(cutoff.getMonth() - 1);
+  else if (period === "3M") cutoff.setMonth(cutoff.getMonth() - 3);
+  else if (period === "6M") cutoff.setMonth(cutoff.getMonth() - 6);
+  else if (period === "1Y") cutoff.setFullYear(cutoff.getFullYear() - 1);
+  return data.filter((p) => new Date(p.date) >= cutoff);
+}
 
 export function PerformanceChart({ data, currency }: PerformanceChartProps) {
-  const first = data[0]?.value ?? 0;
-  const last = data[data.length - 1]?.value ?? 0;
+  const [activePeriod, setActivePeriod] = useState<Period>("1Y");
+
+  const filtered = useMemo(() => filterByPeriod(data, activePeriod), [data, activePeriod]);
+
+  const first = filtered[0]?.value ?? 0;
+  const last = filtered[filtered.length - 1]?.value ?? 0;
   const change = last - first;
   const changePct = first > 0 ? (change / first) * 100 : 0;
   const isPositive = change >= 0;
@@ -50,11 +67,12 @@ export function PerformanceChart({ data, currency }: PerformanceChartProps) {
 
         {/* Period selector */}
         <div className="flex gap-1">
-          {PERIODS.map((p, i) => (
+          {PERIODS.map((p) => (
             <button
               key={p}
+              onClick={() => setActivePeriod(p)}
               className={`text-xs px-2 py-1 rounded-md transition ${
-                i === 3
+                activePeriod === p
                   ? "bg-blue-50 text-blue-700 font-medium"
                   : "text-slate-500 hover:bg-slate-100"
               }`}
@@ -66,7 +84,7 @@ export function PerformanceChart({ data, currency }: PerformanceChartProps) {
       </div>
 
       <ResponsiveContainer width="100%" height={200}>
-        <AreaChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
+        <AreaChart data={filtered} margin={{ top: 5, right: 5, bottom: 0, left: 0 }}>
           <defs>
             <linearGradient id="netWorthGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
@@ -79,7 +97,7 @@ export function PerformanceChart({ data, currency }: PerformanceChartProps) {
             tick={{ fontSize: 11, fill: "#94a3b8" }}
             tickLine={false}
             axisLine={false}
-            tickFormatter={(v) => formatDate(v).slice(3)} // Show "MM.YYYY"
+            tickFormatter={(v) => formatDate(v).slice(3)}
           />
           <YAxis
             tick={{ fontSize: 11, fill: "#94a3b8" }}

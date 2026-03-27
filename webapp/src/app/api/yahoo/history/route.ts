@@ -25,7 +25,8 @@ export async function GET(request: NextRequest) {
       interval: period === "1W" ? "1d" : period === "1M" ? "1d" : "1wk",
     });
 
-    const history = (result.quotes ?? [])
+    const quotes = (result as { quotes?: Array<{ date: Date; close: number | null }> }).quotes ?? [];
+    const history = quotes
       .filter((q) => q.close != null)
       .map((q) => ({
         date: new Date(q.date).toISOString().split("T")[0],
