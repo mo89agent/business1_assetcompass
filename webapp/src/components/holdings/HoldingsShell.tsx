@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { PositionRow, PortfolioBreakdown } from "@/lib/types";
 import { HoldingsTable } from "./HoldingsTable";
 import { PortfolioAnalytics } from "./PortfolioAnalytics";
 import { AddAssetDrawer } from "./AddAssetDrawer";
+import { useLivePrices, type LivePrice } from "@/hooks/useLivePrices";
 import { cn } from "@/lib/utils";
 import { Plus, BarChart2, List } from "lucide-react";
 
@@ -18,6 +19,15 @@ interface Props {
 export function HoldingsShell({ positions, breakdown }: Props) {
   const [tab, setTab] = useState<Tab>("positions");
   const [addOpen, setAddOpen] = useState(false);
+  const [livePrices, setLivePrices] = useState<Record<string, LivePrice>>({});
+
+  const handlePricesUpdate = useCallback((prices: Record<string, LivePrice>) => {
+    setLivePrices(prices);
+  }, []);
+
+  useLivePrices(positions, handlePricesUpdate);
+
+  const liveUpdatedAt = Object.values(livePrices)[0]?.lastUpdated ?? null;
 
   return (
     <>
@@ -50,9 +60,7 @@ export function HoldingsShell({ positions, breakdown }: Props) {
               onClick={() => setTab(id)}
               className={cn(
                 "flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition",
-                tab === id
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+                tab === id ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
               )}
             >
               <Icon size={13} />
@@ -61,7 +69,13 @@ export function HoldingsShell({ positions, breakdown }: Props) {
           ))}
         </div>
 
-        {tab === "positions" && <HoldingsTable positions={positions} />}
+        {tab === "positions" && (
+          <HoldingsTable
+            positions={positions}
+            livePrices={livePrices}
+            liveUpdatedAt={liveUpdatedAt}
+          />
+        )}
         {tab === "analytics" && <PortfolioAnalytics breakdown={breakdown} />}
       </div>
 
