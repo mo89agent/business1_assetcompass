@@ -1,7 +1,8 @@
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { HoldingsTable } from "@/components/holdings/HoldingsTable";
 import { getDemoPositions } from "@/lib/data/holdings";
+import { getPortfolioBreakdown } from "@/lib/data/positionMeta";
+import { HoldingsShell } from "@/components/holdings/HoldingsShell";
 
 export const metadata = { title: "Holdings" };
 
@@ -10,27 +11,11 @@ export default async function HoldingsPage() {
   if (!session) redirect("/login");
 
   const positions = await getDemoPositions();
+  const breakdown = getPortfolioBreakdown(positions);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-slate-900">Holdings</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            {positions.length} positions across all accounts
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition">
-            Export
-          </button>
-          <button className="px-3 py-1.5 text-sm bg-blue-600 rounded-lg text-white hover:bg-blue-700 transition">
-            + Add position
-          </button>
-        </div>
-      </div>
-
-      <HoldingsTable positions={positions} />
+    <div className="space-y-6">
+      <HoldingsShell positions={positions} breakdown={breakdown} />
     </div>
   );
 }

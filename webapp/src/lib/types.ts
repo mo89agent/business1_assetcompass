@@ -455,6 +455,38 @@ export interface PropertyMetrics {
   unrealizedGainPct: number;
 }
 
+// ─── Portfolio analytics ─────────────────────────────────────
+
+export interface WeightedLabel {
+  label: string;
+  pct: number; // 0–100, relative to equity sleeve
+}
+
+export type MarketCapTier = "Large" | "Mid" | "Small";
+export type StyleTier = "Growth" | "Value" | "Blend" | "Dividend";
+
+export interface PortfolioBreakdown {
+  /** Country allocation within equity+ETF sleeve */
+  countries: WeightedLabel[];
+  /** Sector allocation within equity+ETF sleeve */
+  sectors: WeightedLabel[];
+  /** Market-cap breakdown within equity+ETF sleeve */
+  marketCap: WeightedLabel[];
+  /** Style breakdown within equity+ETF sleeve */
+  style: WeightedLabel[];
+  /** Fraction of total portfolio covered by the equity+ETF sleeve (0–100) */
+  equitySlicePct: number;
+}
+
+// ─── Yahoo Finance search result ────────────────────────────
+
+export interface YahooSearchResult {
+  symbol: string;
+  shortname: string | null;
+  typeDisp: string | null;
+  exchDisp: string | null;
+}
+
 export interface PropertySummary {
   id: string;
   accountId: string;
