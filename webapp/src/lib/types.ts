@@ -225,6 +225,59 @@ export interface ImportJobSummary {
   createdAt: string;
 }
 
+// ─── Tax Lots ─────────────────────────────────────────────────
+export interface TaxLot {
+  id: string;
+  positionId: string;
+  acquiredAt: string; // ISO date
+  quantity: number;
+  costBasisPerShare: number;
+  costBasisTotal: number;
+  currentPrice: number;
+  currentValue: number;
+  unrealizedGain: number;
+  unrealizedGainPct: number;
+  holdingDays: number;
+  isLongTerm: boolean; // >= 365 days
+  isTaxFreeGermany: boolean; // crypto >365d = §23 EStG tax-free
+  currency: string;
+  source: SourceRef;
+}
+
+// ─── ETF / Fund Look-through ──────────────────────────────────
+export interface EtfTopHolding {
+  rank: number;
+  name: string;
+  ticker?: string;
+  weightPct: number;
+  country?: string;
+  sector?: string;
+}
+
+export interface EtfExposure {
+  positionId: string;
+  asOf: string; // ISO date — data freshness indicator
+  totalHoldings: number;
+  topHoldings: EtfTopHolding[];
+  geographyBreakdown: Array<{ label: string; pct: number }>;
+  sectorBreakdown: Array<{ label: string; pct: number }>;
+  source: SourceRef;
+}
+
+// ─── Per-position Dividends ───────────────────────────────────
+export interface PositionDividend {
+  id: string;
+  positionId: string;
+  ticker: string;
+  exDate: string; // ISO date
+  payDate: string; // ISO date
+  amountPerShare: number;
+  sharesHeld: number;
+  totalAmount: number;
+  currency: string;
+  isProjected: boolean;
+}
+
 // ─── Real estate ─────────────────────────────────────────────
 export interface PropertySummary {
   id: string;
