@@ -1,22 +1,29 @@
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { ImportWizard } from "@/components/import/ImportWizard";
+import { getImportJobs, getReviewItems } from "@/lib/data/importJobs";
+import { getDemoTransactions } from "@/lib/data/transactions";
+import { ImportHubShell } from "@/components/import/ImportHubShell";
 
-export const metadata = { title: "Import" };
+export const metadata = { title: "Import & Datenprüfung" };
 
 export default async function ImportPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
+  const [jobs, transactions] = await Promise.all([
+    getImportJobs(),
+    getDemoTransactions(),
+  ]);
+
+  const reviewItems = getReviewItems(jobs);
+
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900">Import Data</h1>
-        <p className="text-sm text-slate-500 mt-0.5">
-          Upload CSV files, bank statements, and broker exports
-        </p>
-      </div>
-      <ImportWizard />
+    <div className="max-w-5xl mx-auto">
+      <ImportHubShell
+        jobs={jobs}
+        reviewItems={reviewItems}
+        existingTransactions={transactions}
+      />
     </div>
   );
 }

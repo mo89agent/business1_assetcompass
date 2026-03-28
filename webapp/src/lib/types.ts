@@ -215,6 +215,84 @@ export interface AlertItem {
 }
 
 // ─── Import ──────────────────────────────────────────────────
+
+export type ImportJobStatus = "pending" | "mapped" | "reviewing" | "complete" | "failed";
+
+export type ImportRowStatus =
+  | "imported"
+  | "unverified"
+  | "duplicate"
+  | "missing_data"
+  | "parse_error"
+  | "skipped";
+
+export type ImportIssueType =
+  | "duplicate"
+  | "missing_cost_basis"
+  | "missing_ticker"
+  | "ambiguous_type"
+  | "invalid_date"
+  | "parse_error"
+  | "negative_amount";
+
+export interface ImportRowIssue {
+  type: ImportIssueType;
+  message: string;
+  suggestion?: string;
+  relatedTransactionId?: string; // for duplicate: ID of the existing tx
+}
+
+export interface ImportRow {
+  id: string;
+  jobId: string;
+  rowNumber: number;
+  status: ImportRowStatus;
+  // Parsed and normalised fields
+  parsedDate: string | null;
+  parsedType: TransactionType | null;
+  parsedAmount: number | null;
+  parsedCurrency: string | null;
+  parsedInstrument: string | null;
+  parsedTicker: string | null;
+  parsedQuantity: number | null;
+  parsedPrice: number | null;
+  parsedFee: number | null;
+  parsedDescription: string | null;
+  parserConfidence: number; // 0–100
+  issues: ImportRowIssue[];
+  linkedTransactionId?: string; // set once imported
+}
+
+export interface ImportJob {
+  id: string;
+  filename: string;
+  institution: string;
+  uploadedAt: string; // ISO datetime
+  status: ImportJobStatus;
+  rowsTotal: number;
+  rowsImported: number;
+  rowsWithIssues: number;
+  rowsFailed: number;
+  rows: ImportRow[];
+}
+
+export type ReviewSeverity = "error" | "warning" | "info";
+
+export interface ReviewItem {
+  id: string;
+  severity: ReviewSeverity;
+  issueType: ImportIssueType | "unverified";
+  title: string;
+  description: string;
+  importJobId?: string;
+  importJobFilename?: string;
+  importRowId?: string;
+  transactionId?: string;
+  relatedTransactionId?: string; // duplicate: the existing tx
+  isResolved: boolean;
+  createdAt: string;
+}
+
 export interface ImportJobSummary {
   id: string;
   filename: string;
