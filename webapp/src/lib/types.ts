@@ -279,6 +279,104 @@ export interface PositionDividend {
 }
 
 // ─── Real estate ─────────────────────────────────────────────
+
+export type ValuationMethod =
+  | "purchase_price"
+  | "broker_appraisal"
+  | "bank_valuation"
+  | "online_tool"
+  | "self_estimated";
+
+export type ValuationConfidence = "high" | "medium" | "low";
+
+export interface PropertyValuation {
+  estimatedValue: number;
+  valueLow: number;     // conservative estimate
+  valueHigh: number;    // optimistic estimate
+  confidence: ValuationConfidence;
+  method: ValuationMethod;
+  asOf: string;         // ISO date — explicitly shown to user
+  notes?: string;
+  source: SourceRef;
+}
+
+export interface PropertyLoan {
+  id: string;
+  propertyId: string;
+  lender: string;
+  originalAmount: number;
+  remainingBalance: number;
+  interestRatePct: number;
+  isFixedRate: boolean;
+  fixedRateUntil: string | null; // ISO date
+  monthlyPayment: number;        // total annuity payment
+  termYears: number;             // original loan term
+  startDate: string;             // ISO date
+  currency: string;
+}
+
+export interface CostLine {
+  label: string;
+  monthlyAmount: number;
+  isEstimated: boolean;          // drives "Schätzung" badge in UI
+  category: "management" | "tax" | "insurance" | "maintenance" | "other";
+  notes?: string;
+}
+
+export type PropertyType = "residential" | "commercial" | "mixed" | "land";
+
+export interface PropertyRecord {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  country: string;
+  postalCode: string;
+  type: PropertyType;
+  subtype?: string;
+  sqm: number | null;
+  yearBuilt: number | null;
+  energyClass: string | null;
+
+  // Purchase
+  acquisitionDate: string;   // ISO date
+  acquisitionPrice: number;
+  acquisitionCosts: number;  // Grunderwerbsteuer + Notar + Makler
+
+  // Valuation — always a range, never a single fake-precise number
+  valuation: PropertyValuation;
+
+  // Financing
+  loans: PropertyLoan[];
+
+  // Rental model
+  targetRentMonthly: number;
+  actualRentMonthly: number;
+  vacancyAllowancePct: number;   // e.g. 2 = 2% annual vacancy buffer
+  costLines: CostLine[];
+
+  currency: string;
+}
+
+// Derived metrics (computed from PropertyRecord, not stored)
+export interface PropertyMetrics {
+  totalAcquisitionCost: number;
+  totalLoanBalance: number;
+  equity: number;
+  ltv: number;
+  effectiveMonthlyRent: number;
+  totalMonthlyCosts: number;
+  totalMonthlyDebtService: number;
+  monthlyPrincipal: number;
+  monthlyInterest: number;
+  netOperatingIncome: number;
+  netCashflow: number;
+  grossYield: number;   // based on current estimated value
+  netYield: number;     // NOI / total acquisition cost
+  unrealizedGain: number;
+  unrealizedGainPct: number;
+}
+
 export interface PropertySummary {
   id: string;
   accountId: string;
