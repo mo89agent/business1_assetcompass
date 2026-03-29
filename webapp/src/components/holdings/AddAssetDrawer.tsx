@@ -15,6 +15,7 @@ type Step = "type" | "search" | "details" | "done";
 interface Props {
   open: boolean;
   onClose: () => void;
+  prefillSymbol?: string;
 }
 
 const ASSET_TYPES: { id: AssetType; label: string; description: string; icon: typeof TrendingUp }[] = [
@@ -49,7 +50,7 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
-export function AddAssetDrawer({ open, onClose }: Props) {
+export function AddAssetDrawer({ open, onClose, prefillSymbol }: Props) {
   const [step, setStep] = useState<Step>("type");
   const [assetType, setAssetType] = useState<AssetType | null>(null);
   const [query, setQuery] = useState("");
@@ -67,6 +68,15 @@ export function AddAssetDrawer({ open, onClose }: Props) {
 
   const debouncedQuery = useDebounce(query, 300);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Prefill from market page
+  useEffect(() => {
+    if (open && prefillSymbol) {
+      setAssetType("stock_etf");
+      setSelected({ symbol: prefillSymbol, shortname: prefillSymbol, typeDisp: "Equity", exchDisp: null });
+      setStep("details");
+    }
+  }, [open, prefillSymbol]);
 
   // Reset on close
   useEffect(() => {

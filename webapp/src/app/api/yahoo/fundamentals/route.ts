@@ -17,47 +17,84 @@ export async function GET(request: NextRequest) {
           "fiftyTwoWeekHigh", "fiftyTwoWeekLow",
           "fiftyDayAverage", "twoHundredDayAverage",
           "currency", "exchangeName", "fullExchangeName",
+          "averageVolume", "averageVolume10day",
+          "epsTrailingTwelveMonths", "epsForward",
+          "trailingAnnualDividendRate",
+          "quoteType",
         ],
       }),
       yahooFinance.quoteSummary(symbol, {
-        modules: ["assetProfile", "summaryDetail", "defaultKeyStatistics"],
+        modules: ["assetProfile", "summaryDetail", "defaultKeyStatistics", "fundProfile"],
       }),
     ]);
 
     const q = quote.status === "fulfilled" ? (quote.value as Record<string, unknown>) : {};
-    const s = summary.status === "fulfilled" ? summary.value : {};
+    const s = summary.status === "fulfilled" ? (summary.value as Record<string, unknown>) : {};
 
-    const profile = (s as Record<string, unknown>).assetProfile as Record<string, unknown> | undefined;
-    const keyStats = (s as Record<string, unknown>).defaultKeyStatistics as Record<string, unknown> | undefined;
+    const profile    = s.assetProfile   as Record<string, unknown> | undefined;
+    const keyStats   = s.defaultKeyStatistics as Record<string, unknown> | undefined;
+    const summDetail = s.summaryDetail  as Record<string, unknown> | undefined;
+    const fundProf   = s.fundProfile    as Record<string, unknown> | undefined;
 
     return NextResponse.json({
+      // Identity
       symbol,
-      price: q.regularMarketPrice ?? null,
-      change: q.regularMarketChange ?? null,
-      changePct: q.regularMarketChangePercent ?? null,
+      quoteType:   q.quoteType ?? null,
+      shortName:   q.shortName ?? q.longName ?? null,
+      exchange:    q.fullExchangeName ?? q.exchangeName ?? null,
+      currency:    q.currency ?? null,
+
+      // Price
+      price:         q.regularMarketPrice ?? null,
+      change:        q.regularMarketChange ?? null,
+      changePct:     q.regularMarketChangePercent ?? null,
       previousClose: q.regularMarketPreviousClose ?? null,
-      volume: q.regularMarketVolume ?? null,
-      marketCap: q.marketCap ?? null,
-      currency: q.currency ?? null,
-      exchange: q.fullExchangeName ?? q.exchangeName ?? null,
-      shortName: q.shortName ?? q.longName ?? null,
-      trailingPE: q.trailingPE ?? null,
-      forwardPE: q.forwardPE ?? null,
-      priceToBook: q.priceToBook ?? null,
-      dividendYield: q.dividendYield ?? q.trailingAnnualDividendYield ?? null,
-      week52High: q.fiftyTwoWeekHigh ?? null,
-      week52Low: q.fiftyTwoWeekLow ?? null,
-      ma50: q.fiftyDayAverage ?? null,
-      ma200: q.twoHundredDayAverage ?? null,
-      sector: profile?.sector ?? null,
-      industry: profile?.industry ?? null,
-      country: profile?.country ?? null,
-      employees: profile?.fullTimeEmployees ?? null,
-      description: profile?.longBusinessSummary ?? null,
+      volume:        q.regularMarketVolume ?? null,
+      avgVolume:     q.averageVolume ?? null,
+      avgVolume10d:  q.averageVolume10day ?? null,
+
+      // Valuation
+      marketCap:     q.marketCap ?? null,
+      trailingPE:    q.trailingPE ?? null,
+      forwardPE:     q.forwardPE ?? null,
+      priceToBook:   q.priceToBook ?? null,
+      priceToSales:  (summDetail?.priceToSalesTrailing12Months as number | null) ?? null,
+      eps:           q.epsTrailingTwelveMonths ?? null,
+      epsForward:    q.epsForward ?? null,
+      beta:          keyStats?.beta ?? null,
       sharesOutstanding: keyStats?.sharesOutstanding ?? null,
-      beta: keyStats?.beta ?? null,
+
+      // Dividend
+      dividendYield:    q.dividendYield ?? q.trailingAnnualDividendYield ?? null,
+      dividendRate:     q.trailingAnnualDividendRate ?? null,
+      exDividendDate:   (summDetail?.exDividendDate as string | null) ?? null,
+      payoutRatio:      (summDetail?.payoutRatio as number | null) ?? null,
+
+      // Range / technicals
+      week52High: q.fiftyTwoWeekHigh ?? null,
+      week52Low:  q.fiftyTwoWeekLow ?? null,
+      ma50:       q.fiftyDayAverage ?? null,
+      ma200:      q.twoHundredDayAverage ?? null,
+
+      // Company profile (stocks)
+      sector:      profile?.sector ?? null,
+      industry:    profile?.industry ?? null,
+      country:     profile?.country ?? null,
+      employees:   profile?.fullTimeEmployees ?? null,
+      description: profile?.longBusinessSummary ?? null,
+      website:     profile?.website ?? null,
+
+      // ETF-specific (fundProfile)
+      expenseRatio:  fundProf?.annualReportExpenseRatio ?? null,
+      totalAssets:   (summDetail?.totalAssets as number | null) ?? null,
+      ytdReturn:     (summDetail?.ytdReturn as number | null) ?? null,
+      beta3Year:     (summDetail?.beta3Year as number | null) ?? null,
+      morningstarRating: fundProf?.ratingOverall ?? null,
+      categoryName:  fundProf?.categoryName ?? null,
+      fundFamily:    fundProf?.legalType ?? null,
+      inceptionDate: fundProf?.startDate ?? null,
     });
-  } catch {
+  } catch (e) {
     return NextResponse.json({ error: "Failed to fetch fundamentals" }, { status: 500 });
   }
 }

@@ -215,10 +215,11 @@ export function GlobalSearch({ positions }: Props) {
                   <button
                     key={r.symbol}
                     onClick={() => {
-                      // Navigate to holdings detail if we own it, else open add drawer
                       const owned = positions.find((p) => p.ticker === r.symbol);
                       if (owned) {
                         router.push(`/dashboard/holdings/${owned.id}`);
+                      } else {
+                        router.push(`/dashboard/market/${encodeURIComponent(r.symbol)}`);
                       }
                       closeSearch();
                     }}

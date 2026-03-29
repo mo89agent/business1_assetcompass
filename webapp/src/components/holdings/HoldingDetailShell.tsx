@@ -8,8 +8,9 @@ import { TotalReturnCard } from "./TotalReturnCard";
 import { TaxLotsTable } from "./TaxLotsTable";
 import { PositionDividendHistory } from "./PositionDividendHistory";
 import { EtfLookthrough } from "./EtfLookthrough";
+import { FundamentalsPanel } from "./FundamentalsPanel";
 
-type Tab = "overview" | "lots" | "dividends" | "lookthrough";
+type Tab = "overview" | "lots" | "dividends" | "lookthrough" | "fundamentals";
 
 interface Props {
   position: PositionRow;
@@ -32,11 +33,14 @@ export function HoldingDetailShell({ position, taxLots, etfExposure, dividends }
   const isEtf = position.assetClass === "ETF" || position.assetClass === "FUND";
   const hasDividends = dividends.length > 0;
 
+  const hasYahooTicker = !!position.ticker && position.assetClass !== "CASH";
+
   const tabs: { id: Tab; label: string; show: boolean }[] = [
-    { id: "overview", label: "Übersicht", show: true },
-    { id: "lots", label: `Kauflose (${taxLots.length})`, show: taxLots.length > 0 },
-    { id: "dividends", label: "Dividenden", show: hasDividends },
-    { id: "lookthrough", label: "ETF Look-through", show: isEtf && !!etfExposure },
+    { id: "overview",      label: "Übersicht",         show: true },
+    { id: "fundamentals",  label: "Fundamentals",       show: hasYahooTicker },
+    { id: "lots",          label: `Kauflose (${taxLots.length})`, show: taxLots.length > 0 },
+    { id: "dividends",     label: "Dividenden",         show: hasDividends },
+    { id: "lookthrough",   label: "ETF Look-through",   show: isEtf && !!etfExposure },
   ];
 
   const visibleTabs = tabs.filter((t) => t.show);
@@ -202,6 +206,11 @@ export function HoldingDetailShell({ position, taxLots, etfExposure, dividends }
             />
           </div>
         </div>
+      )}
+
+      {/* ── Tab: Fundamentals ─────────────────────────────────────── */}
+      {activeTab === "fundamentals" && position.ticker && (
+        <FundamentalsPanel symbol={position.ticker} assetClass={position.assetClass} />
       )}
 
       {/* ── Tab: Tax Lots ─────────────────────────────────────────── */}
