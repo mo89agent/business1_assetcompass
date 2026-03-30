@@ -9,6 +9,7 @@ import { TaxLotsTable } from "./TaxLotsTable";
 import { PositionDividendHistory } from "./PositionDividendHistory";
 import { EtfLookthrough } from "./EtfLookthrough";
 import { FundamentalsPanel } from "./FundamentalsPanel";
+import { PositionReturnChart } from "./PositionReturnChart";
 
 type Tab = "overview" | "lots" | "dividends" | "lookthrough" | "fundamentals";
 
@@ -173,6 +174,15 @@ export function HoldingDetailShell({ position, taxLots, etfExposure, dividends }
               </div>
             </div>
           </div>
+
+          {/* Analytics charts: monthly returns, MA, distribution */}
+          {position.assetClass !== "CASH" && (
+            <PositionReturnChart
+              ticker={position.ticker}
+              assetClass={position.assetClass}
+              currency={position.currency}
+            />
+          )}
 
           {/* KPI strip */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

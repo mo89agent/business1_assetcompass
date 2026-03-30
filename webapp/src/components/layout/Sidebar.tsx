@@ -16,6 +16,7 @@ import {
   Bell,
   Settings,
   ChevronRight,
+  Banknote,
 } from "lucide-react";
 
 interface NavItem {
@@ -32,6 +33,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Real Estate", href: "/dashboard/real-estate", icon: Building2 },
   { label: "Crypto", href: "/dashboard/crypto", icon: Bitcoin },
   { label: "Cash & Debt", href: "/dashboard/cash-debt", icon: Landmark },
+  { label: "Dividenden", href: "/dashboard/dividends", icon: Banknote },
   { label: "Scenario Lab", href: "/dashboard/scenarios", icon: FlaskConical },
   { label: "Import", href: "/dashboard/import", icon: Upload },
   { label: "Documents", href: "/dashboard/documents", icon: FolderOpen },

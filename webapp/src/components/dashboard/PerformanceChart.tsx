@@ -69,15 +69,32 @@ export function PerformanceChart({ data, currency }: PerformanceChartProps) {
       .finally(() => setBenchLoading(false));
   }, [benchmarkSymbol, activePeriod]);
 
-  // Normalise benchmark to portfolio start value and build date map
+  // Normalise benchmark to portfolio start value.
+  // Uses nearest-date lookup so sparse portfolio dates always get a benchmark value.
   const benchMap = useMemo(() => {
     if (!benchHistory.length || !filtered.length) return {} as Record<string, number>;
     const portfolioStart = filtered[0].value;
     const benchStart = benchHistory[0].close;
     if (!benchStart) return {} as Record<string, number>;
+
+    // Pre-compute timestamps for binary-search style nearest lookup
+    const bTimes = benchHistory.map((b) => new Date(b.date).getTime());
+
+    function nearestClose(targetDate: string): number {
+      const t = new Date(targetDate).getTime();
+      let idx = 0;
+      let minDiff = Math.abs(bTimes[0] - t);
+      for (let i = 1; i < bTimes.length; i++) {
+        const diff = Math.abs(bTimes[i] - t);
+        if (diff < minDiff) { minDiff = diff; idx = i; }
+      }
+      return benchHistory[idx].close;
+    }
+
     const map: Record<string, number> = {};
-    for (const b of benchHistory) {
-      map[b.date] = (b.close / benchStart) * portfolioStart;
+    for (const p of filtered) {
+      const close = nearestClose(p.date);
+      map[p.date] = (close / benchStart) * portfolioStart;
     }
     return map;
   }, [filtered, benchHistory]);
