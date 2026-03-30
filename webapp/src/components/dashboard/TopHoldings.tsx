@@ -20,19 +20,23 @@ export function TopHoldings({ positions, currency }: TopHoldingsProps) {
         </Link>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-1">
         {positions.map((pos) => (
-          <div key={pos.id} className="flex items-center gap-3">
+          <Link
+            key={pos.id}
+            href={`/dashboard/holdings/${pos.id}`}
+            className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-blue-50 transition-colors group"
+          >
             {/* Ticker badge */}
-            <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-              <span className="text-xs font-bold text-slate-700">
+            <div className="w-9 h-9 rounded-lg bg-slate-100 group-hover:bg-blue-100 flex items-center justify-center shrink-0 transition-colors">
+              <span className="text-xs font-bold text-slate-700 group-hover:text-blue-700 transition-colors">
                 {(pos.ticker ?? pos.name.slice(0, 3)).slice(0, 4)}
               </span>
             </div>
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-800 truncate">
+                <span className="text-sm font-medium text-slate-800 truncate group-hover:text-blue-700 transition-colors">
                   {pos.name}
                 </span>
                 <span className="text-sm font-semibold text-slate-900 ml-2 shrink-0">
@@ -54,7 +58,7 @@ export function TopHoldings({ positions, currency }: TopHoldingsProps) {
                 </span>
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 

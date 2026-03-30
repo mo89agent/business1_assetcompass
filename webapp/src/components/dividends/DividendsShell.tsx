@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Cell, AreaChart, Area, PieChart, Pie, Legend, LineChart, Line,
@@ -95,6 +96,7 @@ interface Props {
 }
 
 export function DividendsShell({ positions }: Props) {
+  const router = useRouter();
   const [dividendData, setDividendData] = useState<Record<string, DividendInfo>>({});
   const [loading, setLoading] = useState(true);
   const [forecastYears] = useState(5);
@@ -185,6 +187,7 @@ export function DividendsShell({ positions }: Props) {
       .slice(0, 8)
       .map((e, i) => ({
         name: e.pos.ticker ?? e.pos.name,
+        posId: e.pos.id,
         value: parseFloat(e.annualIncome.toFixed(2)),
         color: COLORS[i % COLORS.length],
       })),
@@ -364,6 +367,8 @@ export function DividendsShell({ positions }: Props) {
                     outerRadius={72}
                     dataKey="value"
                     paddingAngle={2}
+                    cursor="pointer"
+                    onClick={(d) => router.push(`/dashboard/holdings/${(d as unknown as { posId: string }).posId}`)}
                   >
                     {pieData.map((d, i) => (
                       <Cell key={i} fill={d.color} />
@@ -379,14 +384,18 @@ export function DividendsShell({ positions }: Props) {
                 {pieData.map((d) => {
                   const pct = totalAnnualIncome > 0 ? (d.value / totalAnnualIncome) * 100 : 0;
                   return (
-                    <div key={d.name} className="flex items-center gap-2">
+                    <button
+                      key={d.name}
+                      onClick={() => router.push(`/dashboard/holdings/${d.posId}`)}
+                      className="w-full flex items-center gap-2 rounded-lg px-1 py-0.5 hover:bg-slate-50 transition-colors text-left"
+                    >
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
-                      <span className="text-xs text-slate-700 font-medium w-12 shrink-0">{d.name}</span>
+                      <span className="text-xs text-slate-700 font-medium w-12 shrink-0 hover:text-blue-700">{d.name}</span>
                       <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: d.color }} />
                       </div>
                       <span className="text-[10px] text-slate-500 w-8 text-right">{pct.toFixed(0)}%</span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -404,7 +413,7 @@ export function DividendsShell({ positions }: Props) {
           {upcoming.length > 0 ? (
             <div className="space-y-2">
               {upcoming.slice(0, 7).map(({ pos, info, annualIncome, daysUntil }) => (
-                <div key={pos.id} className="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
+                <button key={pos.id} onClick={() => router.push(`/dashboard/holdings/${pos.id}`)} className="w-full flex items-center gap-3 py-2 border-b border-slate-50 last:border-0 hover:bg-slate-50 rounded-lg px-2 -mx-2 transition-colors text-left">
                   <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
                     <span className="text-[10px] font-bold text-blue-600">{(pos.ticker ?? "?").slice(0, 4)}</span>
                   </div>
@@ -430,7 +439,7 @@ export function DividendsShell({ positions }: Props) {
                   )}>
                     {daysUntil <= 0 ? "Heute/Abgelaufen" : `in ${daysUntil}d`}
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           ) : (
@@ -461,7 +470,7 @@ export function DividendsShell({ positions }: Props) {
               {enriched.map(({ pos, info, annualIncome, yieldOnCost }) => {
                 const hasDivs = (info?.annualDividendRate ?? 0) > 0;
                 return (
-                  <tr key={pos.id} className="hover:bg-slate-50/50 transition-colors">
+                  <tr key={pos.id} onClick={() => router.push(`/dashboard/holdings/${pos.id}`)} className="hover:bg-blue-50/50 transition-colors cursor-pointer">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">

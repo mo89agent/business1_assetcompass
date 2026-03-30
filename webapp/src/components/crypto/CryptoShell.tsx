@@ -6,7 +6,8 @@ import { useLivePrices, type LivePrice } from "@/hooks/useLivePrices";
 import { FundamentalsPanel } from "@/components/holdings/FundamentalsPanel";
 import { AddAssetDrawer } from "@/components/holdings/AddAssetDrawer";
 import { formatCurrency, formatNumber, gainColor, gainBg, cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Plus, Info, Wifi } from "lucide-react";
+import { TrendingUp, TrendingDown, Plus, Info, Wifi, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 // Map short ticker to Yahoo Finance symbol for crypto
 function cryptoYahooSymbol(ticker: string | null): string {
@@ -244,6 +245,17 @@ export function CryptoShell({ cryptoPositions }: Props) {
                       </p>
                     </div>
                   </div>
+                  {!isDemo && (
+                    <div className="mt-4 pt-3 border-t border-slate-100">
+                      <Link
+                        href={`/dashboard/holdings/${selected.id}`}
+                        className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline"
+                      >
+                        <ArrowRight size={12} />
+                        Detailansicht &amp; Charts öffnen
+                      </Link>
+                    </div>
+                  )}
                 </div>
               );
             })()}

@@ -13,6 +13,7 @@ import {
   type PortfolioRiskStats,
 } from "@/lib/finance/scenarioEngine";
 import { AlertTriangle, TrendingUp, TrendingDown, Info, Play, ChevronDown, ChevronUp } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface Props { positions: PositionRow[] }
 
@@ -79,6 +80,7 @@ function McTooltip({ active, payload, label }: Record<string, unknown>) {
 }
 
 export function ScenarioLabShell({ positions }: Props) {
+  const router = useRouter();
   const [horizon, setHorizon] = useState(5);
   const [computed, setComputed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -118,7 +120,7 @@ export function ScenarioLabShell({ positions }: Props) {
     : [];
 
   const allocationData = Object.entries(weights)
-    .map(([ac, w]) => ({ name: ASSET_PARAMS[ac]?.label ?? ac, value: +(w * 100).toFixed(1) }))
+    .map(([ac, w]) => ({ ac, name: ASSET_PARAMS[ac]?.label ?? ac, value: +(w * 100).toFixed(1) }))
     .sort((a, b) => b.value - a.value);
 
   const ALLOC_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4", "#f97316"];
@@ -381,9 +383,13 @@ export function ScenarioLabShell({ positions }: Props) {
           <div className="bg-white rounded-xl border border-slate-200 p-5">
             <h3 className="text-sm font-semibold text-slate-800 mb-4">Portfolioallokation (Szenario-Basis)</h3>
             <div className="space-y-2">
-              {allocationData.map(({ name, value }, i) => (
-                <div key={name} className="flex items-center gap-3">
-                  <div className="w-24 text-xs text-slate-600 text-right shrink-0">{name}</div>
+              {allocationData.map(({ ac, name, value }, i) => (
+                <button
+                  key={name}
+                  onClick={() => router.push(`/dashboard/holdings?filter=${ac}`)}
+                  className="w-full flex items-center gap-3 rounded-lg px-2 py-1 hover:bg-slate-50 transition-colors text-left"
+                >
+                  <div className="w-24 text-xs text-slate-600 text-right shrink-0 group-hover:text-blue-700">{name}</div>
                   <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full"
@@ -391,7 +397,7 @@ export function ScenarioLabShell({ positions }: Props) {
                     />
                   </div>
                   <div className="w-10 text-xs text-slate-500 text-right tabular-nums">{value}%</div>
-                </div>
+                </button>
               ))}
             </div>
           </div>
