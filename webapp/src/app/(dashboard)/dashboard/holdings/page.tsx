@@ -8,9 +8,15 @@ import type { PositionRow } from "@/lib/types";
 
 export const metadata = { title: "Holdings" };
 
-export default async function HoldingsPage() {
+interface Props {
+  searchParams: Promise<{ filter?: string }>;
+}
+
+export default async function HoldingsPage({ searchParams }: Props) {
   const session = await getSession();
   if (!session) redirect("/login");
+
+  const { filter } = await searchParams;
 
   // Load from DB; fall back to demo data if portfolio is empty
   let positions: PositionRow[];
@@ -35,7 +41,7 @@ export default async function HoldingsPage() {
 
   return (
     <div className="space-y-6">
-      <HoldingsShell positions={positions} breakdown={breakdown} />
+      <HoldingsShell positions={positions} breakdown={breakdown} filterClass={filter} />
     </div>
   );
 }

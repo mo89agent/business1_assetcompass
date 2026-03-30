@@ -1,23 +1,26 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import type { PositionRow, PortfolioBreakdown } from "@/lib/types";
 import { HoldingsTable } from "./HoldingsTable";
 import { PortfolioAnalytics } from "./PortfolioAnalytics";
 import { AddAssetDrawer } from "./AddAssetDrawer";
 import { MasterDataDrawer } from "./MasterDataDrawer";
 import { useLivePrices, type LivePrice } from "@/hooks/useLivePrices";
-import { cn } from "@/lib/utils";
-import { Plus, BarChart2, List } from "lucide-react";
+import { cn, ASSET_CLASS_LABELS } from "@/lib/utils";
+import { Plus, BarChart2, List, X } from "lucide-react";
 
 type Tab = "positions" | "analytics";
 
 interface Props {
   positions: PositionRow[];
   breakdown: PortfolioBreakdown;
+  filterClass?: string;
 }
 
-export function HoldingsShell({ positions, breakdown }: Props) {
+export function HoldingsShell({ positions, breakdown, filterClass }: Props) {
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>("positions");
   const [addOpen, setAddOpen] = useState(false);
   const [masterDataPos, setMasterDataPos] = useState<PositionRow | null>(null);
@@ -31,6 +34,17 @@ export function HoldingsShell({ positions, breakdown }: Props) {
 
   const liveUpdatedAt = Object.values(livePrices)[0]?.lastUpdated ?? null;
 
+  const filtered = useMemo(() => {
+    if (!filterClass) return positions;
+    return positions.filter(
+      (p) => p.assetClass.toLowerCase() === filterClass.toLowerCase()
+    );
+  }, [positions, filterClass]);
+
+  const filterLabel = filterClass
+    ? (ASSET_CLASS_LABELS as Record<string, string>)[filterClass.toUpperCase()] ?? filterClass
+    : null;
+
   return (
     <>
       <div className="space-y-6 max-w-7xl mx-auto">
@@ -39,8 +53,17 @@ export function HoldingsShell({ positions, breakdown }: Props) {
           <div>
             <h1 className="text-xl font-semibold text-slate-900">Holdings</h1>
             <p className="text-sm text-slate-500 mt-0.5">
-              {positions.length} Positionen · alle Depots
+              {filtered.length} Positionen
+              {filterLabel ? ` · Filter: ${filterLabel}` : " · alle Depots"}
             </p>
+            {filterLabel && (
+              <button
+                onClick={() => router.push("/dashboard/holdings")}
+                className="mt-1 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition"
+              >
+                <X size={11} /> Filter entfernen
+              </button>
+            )}
           </div>
           <button
             onClick={() => setAddOpen(true)}
@@ -73,7 +96,7 @@ export function HoldingsShell({ positions, breakdown }: Props) {
 
         {tab === "positions" && (
           <HoldingsTable
-            positions={positions}
+            positions={filtered}
             livePrices={livePrices}
             liveUpdatedAt={liveUpdatedAt}
             onEditMasterData={setMasterDataPos}
