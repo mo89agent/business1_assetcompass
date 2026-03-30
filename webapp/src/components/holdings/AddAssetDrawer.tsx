@@ -69,6 +69,7 @@ export function AddAssetDrawer({ open, onClose, prefillSymbol }: Props) {
   });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [priceLoading, setPriceLoading] = useState(false);
 
   const debouncedQuery = useDebounce(query, 300);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -110,6 +111,28 @@ export function AddAssetDrawer({ open, onClose, prefillSymbol }: Props) {
       })
       .catch(() => setSearching(false));
   }, [debouncedQuery, step, assetType]);
+
+  // Auto-fetch real-time price when entering details step
+  useEffect(() => {
+    if (step !== "details" || !selected?.symbol) return;
+    if (assetType === "real_estate") return;
+
+    setPriceLoading(true);
+    fetch(`/api/yahoo/quote?symbols=${encodeURIComponent(selected.symbol)}`)
+      .then((r) => r.json())
+      .then((data: { quotes?: Array<{ regularMarketPrice?: number; currency?: string }> }) => {
+        const q = data.quotes?.[0];
+        if (q?.regularMarketPrice) {
+          setForm((f) => ({
+            ...f,
+            price: q.regularMarketPrice!.toFixed(2),
+            ...(q.currency ? { currency: q.currency } : {}),
+          }));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setPriceLoading(false));
+  }, [step, selected?.symbol, assetType]);
 
   // Focus search input
   useEffect(() => {
@@ -352,14 +375,24 @@ export function AddAssetDrawer({ open, onClose, prefillSymbol }: Props) {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-slate-600 block mb-1.5">Kaufkurs *</label>
+                  <label className="text-xs font-medium text-slate-600 block mb-1.5">
+                    Kaufkurs *
+                    {priceLoading && (
+                      <span className="ml-1.5 text-[10px] text-blue-500 font-normal">
+                        <Loader2 size={9} className="inline animate-spin mr-0.5" />Echtzeit…
+                      </span>
+                    )}
+                    {!priceLoading && form.price && (
+                      <span className="ml-1.5 text-[10px] text-emerald-600 font-normal">Aktueller Kurs</span>
+                    )}
+                  </label>
                   <input
                     type="number"
                     min="0"
                     step="any"
                     value={form.price}
                     onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
-                    placeholder="z.B. 150.00"
+                    placeholder="Wird automatisch befüllt…"
                     className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
                 </div>

@@ -162,6 +162,7 @@ export async function addPosition(input: AddPositionInput) {
   }
 
   revalidatePath("/dashboard/holdings");
+  revalidatePath("/dashboard");
   return { success: true };
 }
 

@@ -14,6 +14,8 @@ const PERIODS = ["1M", "3M", "6M", "1Y", "3Y", "All"] as const;
 type Period = typeof PERIODS[number];
 type ViewMode = "price" | "relative";
 
+interface TxMarker { id: string; type: "BUY" | "SELL"; date: string; price: number; quantity: number; notes: string | null }
+
 const BENCHMARK = { ticker: "VWRL.L", label: "MSCI World (VWRL)" };
 
 interface PricePoint { date: string; close: number }
@@ -54,9 +56,11 @@ export function AssetPriceChart({ ticker, assetClass, currency, avgCostBasis, na
   const [period, setPeriod] = useState<Period>("1Y");
   const [viewMode, setViewMode] = useState<ViewMode>("price");
   const [showBenchmark, setShowBenchmark] = useState(false);
+  const [showTxMarkers, setShowTxMarkers] = useState(true);
 
   const [priceData, setPriceData] = useState<PricePoint[]>([]);
   const [benchData, setBenchData] = useState<PricePoint[]>([]);
+  const [txMarkers, setTxMarkers] = useState<TxMarker[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,10 +77,7 @@ export function AssetPriceChart({ ticker, assetClass, currency, avgCostBasis, na
   );
 
   useEffect(() => {
-    if (!yahooTicker) {
-      setLoading(false);
-      return;
-    }
+    if (!yahooTicker) { setLoading(false); return; }
     setLoading(true);
     setError(null);
 
@@ -86,15 +87,20 @@ export function AssetPriceChart({ ticker, assetClass, currency, avgCostBasis, na
         setError("Kursdaten nicht verfügbar");
       }),
     ];
-
     if (showBenchmark && viewMode === "relative") {
-      fetches.push(
-        fetchHistory(BENCHMARK.ticker, period).then(setBenchData).catch(() => setBenchData([]))
-      );
+      fetches.push(fetchHistory(BENCHMARK.ticker, period).then(setBenchData).catch(() => setBenchData([])));
     }
-
     Promise.all(fetches).finally(() => setLoading(false));
   }, [yahooTicker, period, showBenchmark, viewMode, fetchHistory]);
+
+  // Fetch buy/sell transactions for this ticker
+  useEffect(() => {
+    if (!ticker) return;
+    fetch(`/api/positions/transactions?ticker=${encodeURIComponent(ticker)}`)
+      .then((r) => r.json())
+      .then((d: { transactions?: TxMarker[] }) => setTxMarkers(d.transactions ?? []))
+      .catch(() => {});
+  }, [ticker]);
 
   // ── derived chart data ──────────────────────────────────────
   const priceChartData: ChartPoint[] = priceData.map((d) => ({ date: d.date, asset: d.close }));
@@ -172,6 +178,16 @@ export function AssetPriceChart({ ticker, assetClass, currency, avgCostBasis, na
               vs {BENCHMARK.label}
             </button>
           )}
+
+          {/* Tx markers toggle */}
+          {txMarkers.length > 0 && (
+            <button
+              onClick={() => setShowTxMarkers((b) => !b)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition ${showTxMarkers ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}
+            >
+              Käufe/Verkäufe
+            </button>
+          )}
         </div>
       </div>
 
@@ -237,10 +253,35 @@ export function AssetPriceChart({ ticker, assetClass, currency, avgCostBasis, na
                   label={{ value: "Einstand", position: "insideTopRight", fontSize: 10, fill: "#f59e0b" }}
                 />
               )}
+              {/* Buy/Sell vertical markers */}
+              {showTxMarkers && txMarkers.map((tx) => {
+                const inRange = chartData.some((d) => d.date && tx.date >= (chartData[0]?.date ?? "") && tx.date <= (chartData[chartData.length - 1]?.date ?? ""));
+                if (!inRange) return null;
+                return (
+                  <ReferenceLine
+                    key={tx.id}
+                    x={tx.date}
+                    stroke={tx.type === "BUY" ? "#22c55e" : "#ef4444"}
+                    strokeWidth={1.5}
+                    strokeDasharray="3 2"
+                    label={{
+                      value: tx.type === "BUY" ? "▲" : "▼",
+                      position: tx.type === "BUY" ? "insideBottomLeft" : "insideTopLeft",
+                      fontSize: 11,
+                      fill: tx.type === "BUY" ? "#16a34a" : "#dc2626",
+                    }}
+                  />
+                );
+              })}
               <Tooltip
                 contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "11px" }}
                 formatter={(v) => [formatCurrency(v as number, currency, { maximumFractionDigits: 2 }), name]}
-                labelFormatter={(l) => formatDate(l as string)}
+                labelFormatter={(l) => {
+                  const txOnDate = txMarkers.find((t) => t.date === l);
+                  const base = formatDate(l as string);
+                  if (txOnDate) return `${base} · ${txOnDate.type === "BUY" ? "▲ Kauf" : "▼ Verkauf"} ${txOnDate.quantity} Stk. @ ${txOnDate.price.toFixed(2)}`;
+                  return base;
+                }}
               />
               <Area type="monotone" dataKey="asset" stroke="#3b82f6" strokeWidth={2} fill="url(#assetGrad)" dot={false} />
             </AreaChart>
@@ -277,6 +318,21 @@ export function AssetPriceChart({ ticker, assetClass, currency, avgCostBasis, na
           </ResponsiveContainer>
         )}
       </div>
+
+      {/* Buy/sell marker legend */}
+      {showTxMarkers && txMarkers.length > 0 && (
+        <div className="flex items-center gap-4 text-[10px] text-slate-400">
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-0.5 bg-emerald-500 inline-block" />
+            <span className="text-emerald-600">▲ Kauf</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-0.5 bg-red-500 inline-block" />
+            <span className="text-red-500">▼ Verkauf</span>
+          </span>
+          <span>{txMarkers.filter(t => t.type === "BUY").length} Käufe · {txMarkers.filter(t => t.type === "SELL").length} Verkäufe</span>
+        </div>
+      )}
 
       {/* Footer note */}
       <p className="text-[10px] text-slate-300">
