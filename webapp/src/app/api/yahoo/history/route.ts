@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import yahooFinance from "yahoo-finance2";
+import { yahooFinance } from "@/lib/yahoo";
 
 const PERIOD_MAP: Record<string, { period1: Date }> = {
   "1W": { period1: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },

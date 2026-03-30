@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getDemoPositions } from "@/lib/data/holdings";
+import { loadDbPositions } from "@/app/actions/positions";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
+import type { PositionRow } from "@/lib/types";
 
 export default async function DashboardLayout({
   children,
@@ -12,7 +14,16 @@ export default async function DashboardLayout({
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const positions = await getDemoPositions();
+  // Use DB positions for global search; fall back to demo if empty
+  let positions: PositionRow[];
+  try {
+    const db = await loadDbPositions();
+    positions = db.length > 0
+      ? db.map((p) => ({ ...p, assetClass: p.assetClass as PositionRow["assetClass"] }))
+      : await getDemoPositions();
+  } catch {
+    positions = await getDemoPositions();
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#f8fafc]">
