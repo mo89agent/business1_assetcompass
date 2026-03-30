@@ -5,17 +5,18 @@ import { useRouter } from "next/navigation";
 import { cn, formatCurrency, formatPercent, formatNumber, gainColor, gainBg, ASSET_CLASS_LABELS, ASSET_CLASS_COLORS } from "@/lib/utils";
 import type { PositionRow } from "@/lib/types";
 import type { LivePrice } from "@/hooks/useLivePrices";
-import { TrendingUp, TrendingDown, Wifi } from "lucide-react";
+import { TrendingUp, TrendingDown, Wifi, Pencil } from "lucide-react";
 
 interface HoldingsTableProps {
   positions: PositionRow[];
   livePrices?: Record<string, LivePrice>;
   liveUpdatedAt?: Date | null;
+  onEditMasterData?: (position: PositionRow) => void;
 }
 
 type SortKey = "name" | "marketValue" | "unrealizedGainPct" | "weight" | "assetClass";
 
-export function HoldingsTable({ positions, livePrices = {}, liveUpdatedAt }: HoldingsTableProps) {
+export function HoldingsTable({ positions, livePrices = {}, liveUpdatedAt, onEditMasterData }: HoldingsTableProps) {
   const router = useRouter();
   const [sort, setSort] = useState<SortKey>("marketValue");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -120,6 +121,7 @@ export function HoldingsTable({ positions, livePrices = {}, liveUpdatedAt }: Hol
               <th className="text-right px-3 py-2.5"><SortBtn k="marketValue" label="Wert" /></th>
               <th className="text-right px-3 py-2.5"><SortBtn k="unrealizedGainPct" label="G/V" /></th>
               <th className="text-right px-4 py-2.5 hidden md:table-cell"><SortBtn k="weight" label="Anteil" /></th>
+              {onEditMasterData && <th className="px-3 py-2.5 w-8" />}
             </tr>
           </thead>
 
@@ -222,6 +224,19 @@ export function HoldingsTable({ positions, livePrices = {}, liveUpdatedAt }: Hol
                       <span className="text-xs text-slate-500 w-8 text-right">{pos.weight.toFixed(1)}%</span>
                     </div>
                   </td>
+
+                  {/* Edit master data */}
+                  {onEditMasterData && (
+                    <td className="px-3 py-3 w-8">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onEditMasterData(pos); }}
+                        title="Stammdaten bearbeiten"
+                        className="p-1 rounded text-slate-300 hover:text-slate-600 hover:bg-slate-100 transition"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -241,6 +256,7 @@ export function HoldingsTable({ positions, livePrices = {}, liveUpdatedAt }: Hol
                 </span>
               </td>
               <td className="px-4 py-3 hidden md:table-cell" />
+              {onEditMasterData && <td className="px-3 py-3" />}
             </tr>
           </tfoot>
         </table>

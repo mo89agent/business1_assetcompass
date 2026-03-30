@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { DrawerShell } from "@/components/ui/DrawerShell";
 import { cn } from "@/lib/utils";
 import type { YahooSearchResult } from "@/lib/types";
+import { addPosition } from "@/app/actions/positions";
 import {
   TrendingUp, BarChart2, Home, Bitcoin, Search,
   ChevronRight, Loader2, CheckCircle2, AlertCircle,
@@ -64,7 +65,10 @@ export function AddAssetDrawer({ open, onClose, prefillSymbol }: Props) {
     account: ACCOUNTS[0],
     currency: "EUR",
     notes: "",
+    fees: "",
   });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const debouncedQuery = useDebounce(query, 300);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -86,7 +90,9 @@ export function AddAssetDrawer({ open, onClose, prefillSymbol }: Props) {
       setQuery("");
       setResults([]);
       setSelected(null);
-      setForm({ quantity: "", price: "", date: new Date().toISOString().slice(0, 10), account: ACCOUNTS[0], currency: "EUR", notes: "" });
+      setSaveError(null);
+      setSaving(false);
+      setForm({ quantity: "", price: "", date: new Date().toISOString().slice(0, 10), account: ACCOUNTS[0], currency: "EUR", notes: "", fees: "" });
     }
   }, [open]);
 
@@ -132,9 +138,43 @@ export function AddAssetDrawer({ open, onClose, prefillSymbol }: Props) {
     setStep("details");
   }
 
-  function handleSubmit() {
-    // In production: call server action to create position
-    setStep("done");
+  async function handleSubmit() {
+    if (!selected || !form.quantity || !form.price) return;
+    setSaving(true);
+    setSaveError(null);
+
+    // Determine asset class
+    let assetClass = "STOCK";
+    if (assetType === "crypto") {
+      assetClass = "CRYPTO";
+    } else if (assetType === "other") {
+      assetClass = "OTHER";
+    } else {
+      const td = (selected.typeDisp ?? "").toLowerCase();
+      if (td.includes("etf") || td.includes("fund")) assetClass = "ETF";
+      else if (td.includes("crypto") || td.includes("currency")) assetClass = "CRYPTO";
+      else assetClass = "STOCK";
+    }
+
+    try {
+      await addPosition({
+        ticker: selected.symbol,
+        instrumentName: selected.shortname ?? selected.symbol,
+        assetClass,
+        currency: form.currency,
+        quantity: parseFloat(form.quantity),
+        pricePerUnit: parseFloat(form.price),
+        purchaseDate: form.date,
+        accountName: form.account,
+        fees: form.fees ? parseFloat(form.fees) : undefined,
+        notes: form.notes || undefined,
+      });
+      setStep("done");
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : "Fehler beim Speichern");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const isDetailsValid = form.quantity !== "" && form.price !== "" && form.date !== "";
@@ -360,15 +400,29 @@ export function AddAssetDrawer({ open, onClose, prefillSymbol }: Props) {
                 </select>
               </div>
 
-              <div>
-                <label className="text-xs font-medium text-slate-600 block mb-1.5">Notiz (optional)</label>
-                <textarea
-                  value={form.notes}
-                  onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                  rows={2}
-                  placeholder="z.B. Sparplan-Kauf, Dividende reinvestiert…"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-slate-600 block mb-1.5">Gebühren (optional)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={form.fees}
+                    onChange={(e) => setForm((f) => ({ ...f, fees: e.target.value }))}
+                    placeholder="z.B. 3.90"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600 block mb-1.5">Notiz (optional)</label>
+                  <input
+                    type="text"
+                    value={form.notes}
+                    onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                    placeholder="z.B. Sparplan-Kauf"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
               </div>
 
               {/* Total cost preview */}
@@ -387,19 +441,28 @@ export function AddAssetDrawer({ open, onClose, prefillSymbol }: Props) {
                 </div>
               )}
 
+              {saveError && (
+                <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  <AlertCircle size={14} />
+                  {saveError}
+                </div>
+              )}
+
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={() => setStep("search")}
-                  className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-600 hover:bg-slate-50 transition"
+                  disabled={saving}
+                  className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-600 hover:bg-slate-50 transition disabled:opacity-40"
                 >
                   ← Zurück
                 </button>
                 <button
                   onClick={handleSubmit}
-                  disabled={!isDetailsValid}
-                  className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium disabled:opacity-40 hover:bg-blue-700 transition"
+                  disabled={!isDetailsValid || saving}
+                  className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium disabled:opacity-40 hover:bg-blue-700 transition flex items-center justify-center gap-2"
                 >
-                  Position speichern
+                  {saving && <Loader2 size={14} className="animate-spin" />}
+                  {saving ? "Speichert…" : "Position speichern"}
                 </button>
               </div>
             </div>
@@ -424,7 +487,7 @@ export function AddAssetDrawer({ open, onClose, prefillSymbol }: Props) {
                     setSelected(null);
                     setQuery("");
                     setResults([]);
-                    setForm({ quantity: "", price: "", date: new Date().toISOString().slice(0, 10), account: ACCOUNTS[0], currency: "EUR", notes: "" });
+                    setForm({ quantity: "", price: "", date: new Date().toISOString().slice(0, 10), account: ACCOUNTS[0], currency: "EUR", notes: "", fees: "" });
                   }}
                   className="w-full py-2.5 border border-slate-200 rounded-xl text-sm text-slate-600 hover:bg-slate-50 transition"
                 >

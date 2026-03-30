@@ -5,6 +5,7 @@ import type { PositionRow, PortfolioBreakdown } from "@/lib/types";
 import { HoldingsTable } from "./HoldingsTable";
 import { PortfolioAnalytics } from "./PortfolioAnalytics";
 import { AddAssetDrawer } from "./AddAssetDrawer";
+import { MasterDataDrawer } from "./MasterDataDrawer";
 import { useLivePrices, type LivePrice } from "@/hooks/useLivePrices";
 import { cn } from "@/lib/utils";
 import { Plus, BarChart2, List } from "lucide-react";
@@ -19,6 +20,7 @@ interface Props {
 export function HoldingsShell({ positions, breakdown }: Props) {
   const [tab, setTab] = useState<Tab>("positions");
   const [addOpen, setAddOpen] = useState(false);
+  const [masterDataPos, setMasterDataPos] = useState<PositionRow | null>(null);
   const [livePrices, setLivePrices] = useState<Record<string, LivePrice>>({});
 
   const handlePricesUpdate = useCallback((prices: Record<string, LivePrice>) => {
@@ -74,12 +76,18 @@ export function HoldingsShell({ positions, breakdown }: Props) {
             positions={positions}
             livePrices={livePrices}
             liveUpdatedAt={liveUpdatedAt}
+            onEditMasterData={setMasterDataPos}
           />
         )}
         {tab === "analytics" && <PortfolioAnalytics breakdown={breakdown} />}
       </div>
 
       <AddAssetDrawer open={addOpen} onClose={() => setAddOpen(false)} />
+      <MasterDataDrawer
+        open={masterDataPos !== null}
+        onClose={() => setMasterDataPos(null)}
+        position={masterDataPos}
+      />
     </>
   );
 }

@@ -147,6 +147,12 @@ export interface PositionRow {
   unrealizedGainPct: number;
   currency: string;
   weight: number;
+  // Optional instrument master data (available when loaded from DB)
+  isin?: string | null;
+  sector?: string | null;
+  country?: string | null;
+  ter?: number | null;
+  description?: string | null;
 }
 
 // ─── Transaction view ────────────────────────────────────────
