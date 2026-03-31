@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import type { PositionRow } from "@/lib/types";
 import { useLivePrices, type LivePrice } from "@/hooks/useLivePrices";
-import { FundamentalsPanel } from "@/components/holdings/FundamentalsPanel";
+import { CryptoDataPanel } from "@/components/crypto/CryptoDataPanel";
 import { AddAssetDrawer } from "@/components/holdings/AddAssetDrawer";
 import { formatCurrency, formatNumber, gainColor, gainBg, cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Plus, Info, Wifi, ArrowRight } from "lucide-react";
@@ -260,9 +260,15 @@ export function CryptoShell({ cryptoPositions }: Props) {
               );
             })()}
 
-            {/* Fundamentals / market data */}
+            {/* Crypto market data — Coinbase-style */}
             {selectedYahoo && (
-              <FundamentalsPanel symbol={selectedYahoo} />
+              <CryptoDataPanel
+                symbol={selectedYahoo}
+                name={selected.name}
+                ticker={selected.ticker}
+                currency={selected.currency}
+                avgCostBasis={selected.avgCostBasis}
+              />
             )}
           </div>
         </div>
