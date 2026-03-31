@@ -10,8 +10,9 @@ import { PositionDividendHistory } from "./PositionDividendHistory";
 import { EtfLookthrough } from "./EtfLookthrough";
 import { FundamentalsPanel } from "./FundamentalsPanel";
 import { PositionReturnChart } from "./PositionReturnChart";
+import { SignalsPanel } from "./SignalsPanel";
 
-type Tab = "overview" | "lots" | "dividends" | "lookthrough" | "fundamentals";
+type Tab = "overview" | "lots" | "dividends" | "lookthrough" | "fundamentals" | "signals";
 
 interface Props {
   position: PositionRow;
@@ -40,6 +41,7 @@ export function HoldingDetailShell({ position, taxLots, etfExposure, dividends }
 
   const tabs: { id: Tab; label: string; show: boolean }[] = [
     { id: "overview",      label: "Übersicht",         show: true },
+    { id: "signals",       label: "Signale",            show: hasYahooTicker },
     { id: "fundamentals",  label: "Fundamentals",       show: hasYahooTicker },
     { id: "lots",          label: `Kauflose (${taxLots.length})`, show: taxLots.length > 0 },
     { id: "dividends",     label: "Dividenden",         show: showDividendTab },
@@ -218,6 +220,11 @@ export function HoldingDetailShell({ position, taxLots, etfExposure, dividends }
             />
           </div>
         </div>
+      )}
+
+      {/* ── Tab: Signals ─────────────────────────────────────────── */}
+      {activeTab === "signals" && position.ticker && (
+        <SignalsPanel ticker={position.ticker} name={position.name} />
       )}
 
       {/* ── Tab: Fundamentals ─────────────────────────────────────── */}

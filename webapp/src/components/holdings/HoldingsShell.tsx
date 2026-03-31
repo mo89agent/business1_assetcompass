@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import type { PositionRow, PortfolioBreakdown } from "@/lib/types";
 import { HoldingsTable } from "./HoldingsTable";
 import { PortfolioAnalytics } from "./PortfolioAnalytics";
+import { PortfolioSignalsRadar } from "./PortfolioSignalsRadar";
 import { AddAssetDrawer } from "./AddAssetDrawer";
 import { MasterDataDrawer } from "./MasterDataDrawer";
 import { useLivePrices, type LivePrice } from "@/hooks/useLivePrices";
 import { cn, ASSET_CLASS_LABELS } from "@/lib/utils";
-import { Plus, BarChart2, List, X } from "lucide-react";
+import { Plus, BarChart2, List, X, Zap } from "lucide-react";
 
-type Tab = "positions" | "analytics";
+type Tab = "positions" | "analytics" | "signals";
 
 interface Props {
   positions: PositionRow[];
@@ -79,6 +80,7 @@ export function HoldingsShell({ positions, breakdown, filterClass }: Props) {
           {([
             { id: "positions" as Tab, label: "Positionen", icon: List },
             { id: "analytics" as Tab, label: "Analyse",    icon: BarChart2 },
+            { id: "signals"   as Tab, label: "Signale",    icon: Zap },
           ] as const).map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -103,6 +105,7 @@ export function HoldingsShell({ positions, breakdown, filterClass }: Props) {
           />
         )}
         {tab === "analytics" && <PortfolioAnalytics breakdown={breakdown} />}
+        {tab === "signals" && <PortfolioSignalsRadar positions={filtered} />}
       </div>
 
       <AddAssetDrawer open={addOpen} onClose={() => setAddOpen(false)} />
