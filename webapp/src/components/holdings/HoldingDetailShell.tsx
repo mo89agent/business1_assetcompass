@@ -32,15 +32,17 @@ function MetricCard({ label, value, sub, valueClass }: { label: string; value: s
 
 export function HoldingDetailShell({ position, taxLots, etfExposure, dividends }: Props) {
   const isEtf = position.assetClass === "ETF" || position.assetClass === "FUND";
-  const hasDividends = dividends.length > 0;
 
   const hasYahooTicker = !!position.ticker && position.assetClass !== "CASH";
+  const showDividendTab =
+    hasYahooTicker &&
+    !["CASH", "CRYPTO", "REAL_ESTATE"].includes(position.assetClass);
 
   const tabs: { id: Tab; label: string; show: boolean }[] = [
     { id: "overview",      label: "Übersicht",         show: true },
     { id: "fundamentals",  label: "Fundamentals",       show: hasYahooTicker },
     { id: "lots",          label: `Kauflose (${taxLots.length})`, show: taxLots.length > 0 },
-    { id: "dividends",     label: "Dividenden",         show: hasDividends },
+    { id: "dividends",     label: "Dividenden",         show: showDividendTab },
     { id: "lookthrough",   label: "ETF Look-through",   show: isEtf && !!etfExposure },
   ];
 
@@ -234,7 +236,7 @@ export function HoldingDetailShell({ position, taxLots, etfExposure, dividends }
       )}
 
       {/* ── Tab: Dividends ────────────────────────────────────────── */}
-      {activeTab === "dividends" && hasDividends && (
+      {activeTab === "dividends" && (
         <PositionDividendHistory position={position} dividends={dividends} />
       )}
 

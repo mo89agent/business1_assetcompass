@@ -253,14 +253,22 @@ export function AssetPriceChart({ ticker, assetClass, currency, avgCostBasis, na
                   label={{ value: "Einstand", position: "insideTopRight", fontSize: 10, fill: "#f59e0b" }}
                 />
               )}
-              {/* Buy/Sell vertical markers */}
+              {/* Buy/Sell vertical markers — snapped to nearest chart date */}
               {showTxMarkers && txMarkers.map((tx) => {
-                const inRange = chartData.some((d) => d.date && tx.date >= (chartData[0]?.date ?? "") && tx.date <= (chartData[chartData.length - 1]?.date ?? ""));
-                if (!inRange) return null;
+                const firstDate = chartData[0]?.date ?? "";
+                const lastDate = chartData[chartData.length - 1]?.date ?? "";
+                if (!firstDate || tx.date < firstDate || tx.date > lastDate) return null;
+                // Find nearest available chart date
+                const txMs = new Date(tx.date).getTime();
+                const nearestDate = chartData.reduce((best, d) => {
+                  const dMs = new Date(d.date).getTime();
+                  const bestMs = new Date(best).getTime();
+                  return Math.abs(dMs - txMs) < Math.abs(bestMs - txMs) ? d.date : best;
+                }, firstDate);
                 return (
                   <ReferenceLine
                     key={tx.id}
-                    x={tx.date}
+                    x={nearestDate}
                     stroke={tx.type === "BUY" ? "#22c55e" : "#ef4444"}
                     strokeWidth={1.5}
                     strokeDasharray="3 2"
@@ -277,8 +285,10 @@ export function AssetPriceChart({ ticker, assetClass, currency, avgCostBasis, na
                 contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "11px" }}
                 formatter={(v) => [formatCurrency(v as number, currency, { maximumFractionDigits: 2 }), name]}
                 labelFormatter={(l) => {
-                  const txOnDate = txMarkers.find((t) => t.date === l);
-                  const base = formatDate(l as string);
+                  const lStr = l as string;
+                  const lMs = new Date(lStr).getTime();
+                  const txOnDate = txMarkers.find((t) => Math.abs(new Date(t.date).getTime() - lMs) < 2 * 24 * 60 * 60 * 1000);
+                  const base = formatDate(lStr);
                   if (txOnDate) return `${base} · ${txOnDate.type === "BUY" ? "▲ Kauf" : "▼ Verkauf"} ${txOnDate.quantity} Stk. @ ${txOnDate.price.toFixed(2)}`;
                   return base;
                 }}
