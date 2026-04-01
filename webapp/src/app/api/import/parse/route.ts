@@ -70,11 +70,16 @@ function parseTradeRepublic(headers: string[], rows: string[][]): ParsedRow[] {
   return rows.map(r => {
     const typeRaw = (r[iType] ?? "").toLowerCase();
     let type = "OTHER";
-    if (typeRaw.includes("kauf") || typeRaw.includes("buy"))      type = "BUY";
-    else if (typeRaw.includes("verkauf") || typeRaw.includes("sell")) type = "SELL";
-    else if (typeRaw.includes("dividende") || typeRaw.includes("dividend")) type = "DIVIDEND";
-    else if (typeRaw.includes("einlage") || typeRaw.includes("einzahlung")) type = "DEPOSIT";
-    else if (typeRaw.includes("entnahme") || typeRaw.includes("auszahlung")) type = "WITHDRAWAL";
+    if (typeRaw.includes("kauf") || typeRaw.includes("buy"))                        type = "BUY";
+    else if (typeRaw.includes("verkauf") || typeRaw.includes("sell"))               type = "SELL";
+    else if (typeRaw.includes("dividende") || typeRaw.includes("dividend"))         type = "DIVIDEND";
+    else if (typeRaw.includes("zinsen") || typeRaw.includes("zins"))                type = "DIVIDEND"; // treated as income
+    else if (typeRaw.includes("staking") || typeRaw.includes("reward"))             type = "DIVIDEND";
+    else if (typeRaw.includes("einlage") || typeRaw.includes("einzahlung")
+          || typeRaw.includes("deposit"))                                            type = "DEPOSIT";
+    else if (typeRaw.includes("entnahme") || typeRaw.includes("auszahlung")
+          || typeRaw.includes("withdrawal"))                                         type = "WITHDRAWAL";
+    else if (typeRaw.includes("saveback") || typeRaw.includes("cashback"))          type = "DIVIDEND";
 
     return {
       date: parseGermanDate(r[iDate] ?? ""),

@@ -6,6 +6,7 @@ import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
 import { IncomeWidget } from "@/components/dashboard/IncomeWidget";
 import { AlertsWidget } from "@/components/dashboard/AlertsWidget";
 import { TopHoldings } from "@/components/dashboard/TopHoldings";
+import { IrrCard } from "@/components/dashboard/IrrCard";
 import { getDashboardData } from "@/lib/data/dashboard";
 
 export const metadata = { title: "Overview" };
@@ -27,7 +28,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Net worth summary row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <NetWorthCard
           title="Net Worth"
           value={data.netWorth}
@@ -52,6 +53,10 @@ export default async function DashboardPage() {
           value={data.liquidCash}
           currency={data.currency}
           subtitle="Available to invest"
+        />
+        <IrrCard
+          xirrRate={data.xirrRate}
+          isDemo={data.xirrIsDemo}
         />
       </div>
 

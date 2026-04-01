@@ -142,9 +142,21 @@ export function ImportWizard() {
 
           {/* Anleitung */}
           {institution === "trade_republic" && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs text-blue-700 space-y-1">
-              <p className="font-semibold">Trade Republic CSV exportieren:</p>
-              <p>App → Konto → Aktivität → Exportieren → CSV · Alle Transaktionen</p>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs text-blue-700 space-y-2">
+              <p className="font-semibold text-sm">Trade Republic — CSV exportieren</p>
+              <ol className="list-decimal list-inside space-y-1 leading-relaxed">
+                <li>App öffnen → unten auf <strong>„Konto"</strong> tippen (Person-Symbol)</li>
+                <li>Nach oben scrollen → <strong>„Dokumente"</strong> antippen</li>
+                <li><strong>„Kontoauszug"</strong> oder <strong>„Transaktionshistorie"</strong> wählen</li>
+                <li>Zeitraum auswählen (<em>maximal verfügbarer Zeitraum</em>)</li>
+                <li><strong>„Als CSV exportieren"</strong> → per E-Mail oder Teilen senden</li>
+              </ol>
+              <p className="text-blue-600">
+                <strong>Tipp:</strong> Alternativ: Web-Login auf app.traderepublic.com → Portfolio → Export
+              </p>
+              <p className="text-[10px] text-blue-500">
+                Format: Datum · Typ · ISIN · Name · Stücke · Kurs · Betrag · Gebühr
+              </p>
             </div>
           )}
           {institution === "comdirect" && (

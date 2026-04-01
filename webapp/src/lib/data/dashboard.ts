@@ -1,6 +1,7 @@
 // Dashboard data layer — server-side only
 import { db } from "@/lib/db";
 import { ASSET_CLASS_COLORS, ASSET_CLASS_LABELS } from "@/lib/utils";
+import { xirr } from "@/lib/xirr";
 import type {
   AllocationSlice,
   AlertItem,
@@ -22,6 +23,10 @@ export interface DashboardData {
   topHoldings: PositionRow[];
   recentIncome: IncomeEntry[];
   alerts: AlertItem[];
+  /** Annualised money-weighted return (XIRR). null if not enough data. */
+  xirrRate: number | null;
+  /** true when xirrRate is computed from demo data */
+  xirrIsDemo: boolean;
 }
 
 export async function getDashboardData(workspaceId: string): Promise<DashboardData> {
@@ -136,6 +141,29 @@ async function buildRealDashboardData(workspaceId: string, positions: Awaited<Re
     }));
   } catch { /* ignore */ }
 
+  // ── XIRR from real transaction history ────────────────────────
+  // External cash flows: deposits (negative) + withdrawals (positive) + terminal value
+  let xirrRate: number | null = null;
+  try {
+    const cashflowTx = await db.transaction.findMany({
+      where: {
+        workspaceId,
+        type: { in: ["DEPOSIT", "WITHDRAWAL"] },
+        isDeleted: false,
+      },
+      orderBy: { executedAt: "asc" },
+    });
+    if (cashflowTx.length >= 1) {
+      const flows = cashflowTx.map((tx) => ({
+        amount: tx.type === "DEPOSIT" ? -Math.abs(Number(tx.amount)) : Math.abs(Number(tx.amount)),
+        date: tx.executedAt,
+      }));
+      // Terminal value: current net worth (positive inflow = "you could liquidate today")
+      flows.push({ amount: netWorth, date: now });
+      xirrRate = xirr(flows);
+    }
+  } catch { /* ignore */ }
+
   return {
     currency,
     netWorth,
@@ -149,7 +177,38 @@ async function buildRealDashboardData(workspaceId: string, positions: Awaited<Re
     topHoldings,
     recentIncome,
     alerts: [],
+    xirrRate,
+    xirrIsDemo: false,
   };
+}
+
+/**
+ * Demo XIRR cash flows: mimics a typical German long-term investor.
+ * Initial lump sum + monthly savings plan starting Jan 2023.
+ * Terminal value = demo net worth (765,000 €) on 2026-03-28.
+ *
+ * Total invested: 200,000 + 38 × 5,000 = 390,000 €
+ * Terminal:       765,000 €
+ * Approximate XIRR: ~17-19% p.a. (driven by stock/crypto gains in demo)
+ */
+function computeDemoXirr(netWorth: number): number | null {
+  const flows: Array<{ amount: number; date: Date }> = [];
+
+  // Lump sum initial investment (Jan 2023)
+  flows.push({ amount: -200_000, date: new Date("2023-01-15") });
+
+  // Monthly savings plan: 5,000 € / month for 38 months (Feb 2023 – Mar 2026)
+  const start = new Date("2023-02-01");
+  for (let m = 0; m < 38; m++) {
+    const d = new Date(start);
+    d.setMonth(d.getMonth() + m);
+    flows.push({ amount: -5_000, date: d });
+  }
+
+  // Terminal value: liquidation value of the portfolio today
+  flows.push({ amount: netWorth, date: new Date("2026-03-28") });
+
+  return xirr(flows);
 }
 
 function getDemoDashboardData(_workspaceId: string): DashboardData {
@@ -196,5 +255,8 @@ function getDemoDashboardData(_workspaceId: string): DashboardData {
     { id: "2", type: "EXPIRING_FIXED_RATE", severity: "CRITICAL", title: "Fixed rate expiring soon", message: "Mortgage on Berliner Str. 12 resets in 47 days.", createdAt: new Date().toISOString(), isRead: false },
     { id: "3", type: "CONCENTRATION_RISK", severity: "INFO", title: "Concentration risk", message: "Tech sector exceeds 35% of equity portfolio.", createdAt: new Date().toISOString(), isRead: true },
   ];
-  return { currency, netWorth, totalAssets, totalLiabilities, liquidCash: 85000, netWorthChange: 32400, netWorthChangePct: 4.1, allocations, performanceHistory, topHoldings, recentIncome, alerts };
+
+  const xirrRate = computeDemoXirr(netWorth);
+
+  return { currency, netWorth, totalAssets, totalLiabilities, liquidCash: 85000, netWorthChange: 32400, netWorthChangePct: 4.1, allocations, performanceHistory, topHoldings, recentIncome, alerts, xirrRate, xirrIsDemo: true };
 }
