@@ -39,19 +39,21 @@ const ETF_COUNTRY: Record<string, Array<{ label: string; pct: number }>> = {
 };
 
 // ETF sector distributions
+// ── VWRL sector weights (MSCI ACWI / FTSE All-World approximation) ──────────
+// Sum must equal exactly 100.0 — verified: 23.0+15.8+12.2+10.0+10.1+8.6+6.9+4.6+3.2+3.1+2.5 = 100.0
 const ETF_SECTOR: Record<string, Array<{ label: string; pct: number }>> = {
   VWRL: [
-    { label: "Technologie",         pct: 24.1 },
+    { label: "Technologie",         pct: 23.0 },
     { label: "Finanzen",            pct: 15.8 },
     { label: "Gesundheit",          pct: 12.2 },
-    { label: "Zyklischer Konsum",   pct: 10.8 },
+    { label: "Zyklischer Konsum",   pct: 10.0 },
     { label: "Industrie",           pct: 10.1 },
     { label: "Kommunikation",       pct: 8.6  },
     { label: "Basiskonsumgüter",    pct: 6.9  },
-    { label: "Energie",             pct: 5.2  },
-    { label: "Materialien",         pct: 3.8  },
+    { label: "Energie",             pct: 4.6  },
+    { label: "Materialien",         pct: 3.2  },
     { label: "Immobilien",          pct: 3.1  },
-    { label: "Versorger",           pct: 2.9  },
+    { label: "Versorger",           pct: 2.5  },
   ],
   XEON: [
     { label: "Finanzen",            pct: 22.4 },

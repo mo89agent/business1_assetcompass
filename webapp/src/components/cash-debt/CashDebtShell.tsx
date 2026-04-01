@@ -31,8 +31,9 @@ const DEMO_CASH: CashAccountRow[] = [
   { id: "ca2", name: "ING Girokonto", institution: "ING", balance: 12400, currency: "EUR", interestRate: 0, type: "Current" },
 ];
 
+// Monthly PMT verified: 250,000 × (0.0185/12 × (1+0.0185/12)^240) / ((1+0.0185/12)^240−1) = 1,247 €
 const DEMO_LOANS: LoanRow[] = [
-  { id: "l1", name: "DKB Hypothek — Berliner Str. 12", lender: "DKB", principal: 320000, remaining: 198000, currency: "EUR", rate: 1.85, monthly: 1820, maturity: "2026-05-01", fixedUntil: "2026-05-01", type: "Mortgage", ltv: 51.4 },
+  { id: "l1", name: "DKB Hypothek — Berliner Str. 12", lender: "DKB", principal: 250000, remaining: 198000, currency: "EUR", rate: 1.85, monthly: 1247, maturity: "2040-06-01", fixedUntil: "2026-05-01", type: "Mortgage", ltv: 51.4 },
 ];
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -50,8 +51,10 @@ export function CashDebtShell({ initialCash, initialLoans, isDemo }: Props) {
     name: "", lender: "", principal: "", remaining: "", currency: "EUR", rate: "", monthly: "", maturity: "", fixedUntil: "", type: "Mortgage",
   });
 
+  // FX rates to EUR (approximate mid-market rates)
+  const FX_TO_EUR: Record<string, number> = { EUR: 1.0, USD: 0.92, GBP: 1.17, CHF: 1.06 };
   const totalCash = cashAccounts.reduce(
-    (s, c) => s + (c.currency === "EUR" ? c.balance : c.balance * 0.93),
+    (s, c) => s + c.balance * (FX_TO_EUR[c.currency] ?? 1.0),
     0
   );
   const totalDebt = loans.reduce((s, l) => s + l.remaining, 0);
