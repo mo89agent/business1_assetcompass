@@ -91,14 +91,9 @@ export function CashflowPanel({ property, metrics }: Props) {
   const annualInterest = metrics.monthlyInterest * 12;
   const annualPrincipal = metrics.monthlyPrincipal * 12;
 
-  // Yield metrics
-  const totalAcquisitionCost = property.acquisitionPrice + property.acquisitionCosts;
-  const grossYieldValue = property.valuation.estimatedValue > 0
-    ? (property.targetRentMonthly * 12) / property.valuation.estimatedValue * 100
-    : 0;
-  const netYieldValue = totalAcquisitionCost > 0
-    ? (annualNOI / totalAcquisitionCost) * 100
-    : 0;
+  // Yield metrics — use pre-computed values from metrics (single source of truth)
+  const grossYieldValue = metrics.grossYield;
+  const netYieldValue = metrics.netYield;
 
   return (
     <div className="space-y-5">
