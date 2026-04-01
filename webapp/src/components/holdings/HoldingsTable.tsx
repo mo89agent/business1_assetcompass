@@ -219,6 +219,7 @@ export function HoldingsTable({ positions, livePrices = {}, liveUpdatedAt, onEdi
                   <td className="px-4 py-3 text-right hidden md:table-cell">
                     <div className="flex items-center justify-end gap-2">
                       <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        {/* Bar scaled ×5 so a 20% position fills the bar; capped at 100% */}
                         <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(pos.weight * 5, 100)}%` }} />
                       </div>
                       <span className="text-xs text-slate-500 w-8 text-right">{pos.weight.toFixed(1)}%</span>

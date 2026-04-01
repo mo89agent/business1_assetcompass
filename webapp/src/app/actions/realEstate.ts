@@ -185,7 +185,8 @@ export async function addProperty(input: AddPropertyInput): Promise<{ success: b
         currentValueDate: new Date(),
         targetRentMonthly: input.targetRentMonthly ?? 0,
         actualRentMonthly: input.actualRentMonthly ?? 0,
-        vacancyRate: (input.vacancyRate ?? 0) / 100,
+        // vacancyRate stored as decimal (0–1); input must be percentage (0–100)
+        vacancyRate: Math.min(Math.max((input.vacancyRate ?? 0), 0), 100) / 100,
         operatingCostsMonthly: input.operatingCostsMonthly ?? 0,
         maintenanceReserve: input.maintenanceReserve ?? 0,
         notes: input.notes ?? null,
