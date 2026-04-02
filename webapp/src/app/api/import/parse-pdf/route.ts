@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require("pdf-parse");
 
 // ── Types (same shape as /api/import/parse) ───────────────────────────────────
 
@@ -255,6 +253,8 @@ export async function POST(request: NextRequest) {
     if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
 
     const buffer = Buffer.from(await file.arrayBuffer());
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const pdfParse = require("pdf-parse");
     const parsed = await pdfParse(buffer, { max: 0 }); // max:0 = all pages
     const text: string = parsed.text;
 
