@@ -1,4 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
+
+// Disable worker thread — not needed in Node.js server context
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(pdfjs as any).GlobalWorkerOptions = (pdfjs as any).GlobalWorkerOptions ?? {};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(pdfjs as any).GlobalWorkerOptions.workerSrc = "";
 
 // ── Types (same shape as /api/import/parse) ───────────────────────────────────
 
@@ -17,21 +24,39 @@ interface ParsedRow {
   warning?: string;
 }
 
+// ── Extract text from PDF buffer using pdfjs-dist ─────────────────────────────
+
+async function extractPdfText(buffer: Buffer): Promise<{ text: string; numPages: number }> {
+  const data = new Uint8Array(buffer);
+  const loadingTask = pdfjs.getDocument({ data, useWorkerFetch: false, isEvalSupported: false, useSystemFonts: true });
+  const pdf = await loadingTask.promise;
+  const numPages = pdf.numPages;
+  const pageTexts: string[] = [];
+
+  for (let p = 1; p <= numPages; p++) {
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const lineText = content.items
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((item: any) => ("str" in item ? item.str : ""))
+      .join(" ");
+    pageTexts.push(lineText);
+  }
+
+  return { text: pageTexts.join("\n"), numPages };
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function parseGermanNumber(s: string): number {
   if (!s) return 0;
-  // 1.234,56 → 1234.56  |  1,234.56 → 1234.56 (Coinbase-style)
   const cleaned = s.replace(/[^\d.,-]/g, "");
   if (cleaned.includes(",") && cleaned.includes(".")) {
-    // Determine which is decimal separator by position
     const lastComma = cleaned.lastIndexOf(",");
     const lastDot = cleaned.lastIndexOf(".");
     if (lastComma > lastDot) {
-      // German format: 1.234,56
       return parseFloat(cleaned.replace(/\./g, "").replace(",", ".")) || 0;
     } else {
-      // EN format: 1,234.56
       return parseFloat(cleaned.replace(/,/g, "")) || 0;
     }
   }
@@ -61,24 +86,6 @@ function classifyType(raw: string): string {
 }
 
 // ── Parser: Trade Republic Kontoauszug PDF ────────────────────────────────────
-//
-// TR PDFs have two common layouts:
-//
-// Layout A (Kontoauszug / account statement):
-//   01.03.2026  Kauf                           -1.124,00 EUR
-//               Vanguard FTSE All-World
-//               ISIN IE00B3RBWM25 · 10 Stk. · 112,40 EUR
-//
-// Layout B (Portfolioübersicht / individual order PDF):
-//   Kauf · 01.03.2026 · 10:32
-//   Vanguard FTSE All-World UCITS ETF (VWRL)
-//   IE00B3RBWM25
-//   10 Stk.
-//   112,40 EUR / Stk.
-//   Gesamtbetrag: 1.124,00 EUR
-//
-// We try both patterns and merge results.
-// ─────────────────────────────────────────────────────────────────────────────
 
 function parseTRPdf(text: string): ParsedRow[] {
   const lines = text
@@ -88,8 +95,6 @@ function parseTRPdf(text: string): ParsedRow[] {
 
   const rows: ParsedRow[] = [];
 
-  // ── Pattern A: line-by-line Kontoauszug ─────────────────────────────────────
-  // Anchor: line starting with DD.MM.YYYY followed by a type keyword
   const DATE_TYPE_RE = /^(\d{2}\.\d{2}\.\d{4})\s+(.+?)\s+([-+]?[\d.,]+)\s*(EUR|USD|GBP|CHF)?$/i;
   const ISIN_QTY_RE  = /ISIN\s+([A-Z]{2}[A-Z0-9]{10})|([A-Z]{2}[A-Z0-9]{10})/;
   const QTY_RE       = /([\d.,]+)\s*Stk(?:\.|ück)?/i;
@@ -100,13 +105,12 @@ function parseTRPdf(text: string): ParsedRow[] {
     const line = lines[i];
     const m = line.match(DATE_TYPE_RE);
     if (m) {
-      const date   = parseGermanDate(m[1]);
+      const date    = parseGermanDate(m[1]);
       const typeRaw = m[2].trim();
-      const type   = classifyType(typeRaw);
-      const amount = parseGermanNumber(m[3]);
+      const type    = classifyType(typeRaw);
+      const amount  = parseGermanNumber(m[3]);
       const currency = (m[4] ?? "EUR").toUpperCase();
 
-      // Look ahead up to 5 lines for ISIN, name, quantity, price
       let isin: string | null = null;
       let name: string | null = null;
       let quantity = 0;
@@ -114,20 +118,13 @@ function parseTRPdf(text: string): ParsedRow[] {
 
       for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
         const next = lines[j];
-
-        // Stop if next date-type line found
         if (/^\d{2}\.\d{2}\.\d{4}\s/.test(next)) break;
-
         const isinM = next.match(ISIN_QTY_RE);
         if (isinM) isin = isinM[1] ?? isinM[2];
-
         const qtyM = next.match(QTY_RE);
         if (qtyM) quantity = parseGermanNumber(qtyM[1]);
-
         const priceM = next.match(PRICE_RE);
         if (priceM) price = parseGermanNumber(priceM[1]);
-
-        // Heuristic: lines that look like a security name (not numbers, not ISIN)
         if (!isinM && !qtyM && !priceM && next.length > 3 && !/^\d/.test(next)) {
           if (!name) name = next;
         }
@@ -135,16 +132,8 @@ function parseTRPdf(text: string): ParsedRow[] {
 
       if (date && type !== "OTHER") {
         rows.push({
-          date,
-          type,
-          isin,
-          name,
-          ticker: null,
-          quantity,
-          price,
-          amount,
-          currency,
-          fees: 0,
+          date, type, isin, name, ticker: null,
+          quantity, price, amount, currency, fees: 0,
           status: date && amount > 0 ? "ok" : "warning",
           warning: (!date || amount === 0) ? "Datum oder Betrag fehlt" : undefined,
         });
@@ -155,18 +144,16 @@ function parseTRPdf(text: string): ParsedRow[] {
     i++;
   }
 
-  // ── Pattern B: individual order PDFs (one transaction per page) ────────────
-  // Detect by looking for "Gesamtbetrag" or "Abgerechnete Stücke" keywords
+  // Pattern B: individual order PDFs
   if (rows.length === 0) {
     const fullText = lines.join(" ");
-    const dateM    = fullText.match(/(\d{2}\.\d{2}\.\d{4})/);
-    const typeM    = fullText.match(/\b(Kauf|Verkauf|Dividende|Zinsen|Einzahlung|Auszahlung|Sparplan)\b/i);
-    const isinM    = fullText.match(/\b([A-Z]{2}[A-Z0-9]{10})\b/);
-    const totalM   = fullText.match(/Gesamtbetrag[:\s]+([-+]?[\d.,]+)\s*(EUR|USD)?/i)
-                  ?? fullText.match(/Betrag[:\s]+([-+]?[\d.,]+)\s*(EUR|USD)?/i);
-    const qtyM     = fullText.match(/([\d.,]+)\s*(?:abgerechnete\s*)?Stk(?:\.|ück)?/i);
-    const priceM   = fullText.match(/([\d.,]+)\s*(?:EUR|USD)\s*\/\s*Stk/i);
-    // Security name: first non-date, non-keyword, non-ISIN long text line
+    const dateM  = fullText.match(/(\d{2}\.\d{2}\.\d{4})/);
+    const typeM  = fullText.match(/\b(Kauf|Verkauf|Dividende|Zinsen|Einzahlung|Auszahlung|Sparplan)\b/i);
+    const isinM  = fullText.match(/\b([A-Z]{2}[A-Z0-9]{10})\b/);
+    const totalM = fullText.match(/Gesamtbetrag[:\s]+([-+]?[\d.,]+)\s*(EUR|USD)?/i)
+                ?? fullText.match(/Betrag[:\s]+([-+]?[\d.,]+)\s*(EUR|USD)?/i);
+    const qtyM   = fullText.match(/([\d.,]+)\s*(?:abgerechnete\s*)?Stk(?:\.|ück)?/i);
+    const priceM = fullText.match(/([\d.,]+)\s*(?:EUR|USD)\s*\/\s*Stk/i);
     const nameCandidate = lines.find(
       (l) => l.length > 5 && !/^\d/.test(l) && !/(Kauf|Verkauf|Dividende|ISIN|Stück|Kurs|Betrag|Trade\s+Republic|Seite)/i.test(l)
     );
@@ -191,7 +178,7 @@ function parseTRPdf(text: string): ParsedRow[] {
   return rows;
 }
 
-// ── Generic PDF parser (fallback for unknown formats) ────────────────────────
+// ── Generic PDF parser (fallback) ─────────────────────────────────────────────
 
 function parseGenericPdf(text: string): ParsedRow[] {
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
@@ -229,11 +216,8 @@ function parseGenericPdf(text: string): ParsedRow[] {
     rows.push({
       date:     parseGermanDate(dateM[1]),
       type:     classifyType(typeM[1]),
-      isin,
-      name,
-      ticker:   null,
-      quantity,
-      price,
+      isin, name, ticker: null,
+      quantity, price,
       amount:   amtM ? Math.abs(parseGermanNumber(amtM[1])) : 0,
       currency: amtM?.[2]?.toUpperCase() ?? "EUR",
       fees:     0,
@@ -253,10 +237,7 @@ export async function POST(request: NextRequest) {
     if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pdfParse = require("pdf-parse");
-    const parsed = await pdfParse(buffer, { max: 0 }); // max:0 = all pages
-    const text: string = parsed.text;
+    const { text, numPages } = await extractPdfText(buffer);
 
     if (!text || text.trim().length < 20) {
       return NextResponse.json(
@@ -265,15 +246,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Detect institution
     const isTR = /trade\s*republic/i.test(text);
-
     let rows: ParsedRow[] = isTR ? parseTRPdf(text) : parseGenericPdf(text);
-
-    // Fallback to generic if TR parser found nothing
     if (rows.length === 0) rows = parseGenericPdf(text);
 
-    // Validate
     const validated = rows.map((r) => {
       if (!r.date) return { ...r, status: "warning" as const, warning: "Datum fehlt" };
       if (r.type === "OTHER") return { ...r, status: "warning" as const, warning: "Transaktionstyp unklar" };
@@ -286,7 +262,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       institution: isTR ? "trade_republic_pdf" : "pdf_generic",
       sourceType:  "pdf",
-      pages:       parsed.numpages,
+      pages:       numPages,
       rows:        validated,
       stats: {
         total:    validated.length,
