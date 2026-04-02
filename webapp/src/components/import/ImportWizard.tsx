@@ -9,6 +9,7 @@ type Step = "upload" | "preview" | "done";
 
 const SUPPORTED_INSTITUTIONS = [
   { id: "trade_republic", name: "Trade Republic", logo: "📱", description: "Portfolio-Export CSV (Konto → Export)" },
+  { id: "trade_republic_pdf", name: "Trade Republic PDF", logo: "📑", description: "Kontoauszug als PDF (kein CSV verfügbar)" },
   { id: "comdirect", name: "Comdirect", logo: "🏦", description: "Depotauszug / Umsätze CSV" },
   { id: "flatex", name: "Flatex", logo: "🏛️", description: "Depot- und Kontoauszüge" },
   { id: "coinbase", name: "Coinbase", logo: "🪙", description: "Transaction history CSV" },
@@ -21,7 +22,8 @@ interface ParsedRow {
   currency: string; fees: number; status: "ok" | "warning" | "error"; warning?: string;
 }
 interface ParseResult {
-  institution: string; headers: string[];
+  institution: string; headers?: string[];
+  sourceType?: string; pages?: number;
   rows: ParsedRow[];
   stats: { total: number; errors: number; warnings: number; ok: number };
 }
@@ -56,7 +58,9 @@ export function ImportWizard() {
       const form = new FormData();
       form.append("file", file);
       form.append("institution", institution);
-      const res = await fetch("/api/import/parse", { method: "POST", body: form });
+      const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
+      const endpoint = isPdf ? "/api/import/parse-pdf" : "/api/import/parse";
+      const res = await fetch(endpoint, { method: "POST", body: form });
       const data = await res.json() as ParseResult & { error?: string };
       if (data.error) { setParseError(data.error); return; }
       setParseResult(data);
@@ -159,6 +163,22 @@ export function ImportWizard() {
               </p>
             </div>
           )}
+          {institution === "trade_republic_pdf" && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 space-y-2">
+              <p className="font-semibold text-sm">Trade Republic — Kontoauszug als PDF</p>
+              <ol className="list-decimal list-inside space-y-1 leading-relaxed">
+                <li>App öffnen → unten auf <strong>„Konto"</strong> tippen (Person-Symbol)</li>
+                <li>Nach oben scrollen → <strong>„Dokumente"</strong> antippen</li>
+                <li><strong>„Kontoauszug"</strong> wählen → Zeitraum auswählen</li>
+                <li>PDF öffnen und per <strong>„Teilen"</strong> auf dein Gerät speichern</li>
+                <li>Gespeicherte PDF-Datei hier hochladen</li>
+              </ol>
+              <p className="text-amber-700">
+                <strong>Hinweis:</strong> Die PDF-Erkennung liest Datum, Typ, ISIN, Betrag und Stückzahl automatisch heraus.
+                Bitte prüfe die Vorschau sorgfältig.
+              </p>
+            </div>
+          )}
           {institution === "comdirect" && (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs text-blue-700 space-y-1">
               <p className="font-semibold">Comdirect CSV exportieren:</p>
@@ -189,11 +209,11 @@ export function ImportWizard() {
               ) : (
                 <div className="text-center">
                   <Upload size={28} className="text-slate-300 mx-auto mb-1.5" />
-                  <p className="text-sm text-slate-600">CSV hier ablegen oder klicken</p>
-                  <p className="text-xs text-slate-400 mt-0.5">CSV · XLSX · TXT</p>
+                  <p className="text-sm text-slate-600">Datei hier ablegen oder klicken</p>
+                  <p className="text-xs text-slate-400 mt-0.5">CSV · XLSX · TXT · PDF</p>
                 </div>
               )}
-              <input id="file-upload" type="file" className="hidden" accept=".csv,.xlsx,.txt" onChange={handleFileChange} />
+              <input id="file-upload" type="file" className="hidden" accept=".csv,.xlsx,.txt,.pdf" onChange={handleFileChange} />
             </label>
           </div>
 
@@ -222,6 +242,9 @@ export function ImportWizard() {
               <span className="text-emerald-600 font-medium">✓ {parseResult.stats.ok} bereit</span>
               {parseResult.stats.warnings > 0 && <span className="text-amber-600 font-medium">⚠ {parseResult.stats.warnings} Warnungen</span>}
               {parseResult.stats.errors > 0 && <span className="text-red-600 font-medium">✗ {parseResult.stats.errors} Fehler</span>}
+              {parseResult.sourceType === "pdf" && parseResult.pages != null && (
+                <span className="text-slate-400">· {parseResult.pages} Seiten (PDF)</span>
+              )}
             </div>
             <span className="text-xs text-slate-400 ml-auto">
               {selectedRows.size} von {parseResult.rows.length} ausgewählt
