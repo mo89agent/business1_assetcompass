@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { cn, formatCurrency, formatPercent, gainColor, ASSET_CLASS_LABELS, ASSET_CLASS_COLORS } from "@/lib/utils";
 import type { PositionRow, TaxLot, EtfExposure, PositionDividend, AssetClass } from "@/lib/types";
+import { useLivePrices, type LivePrice } from "@/hooks/useLivePrices";
 import { AssetPriceChart } from "./AssetPriceChart";
 import { TotalReturnCard } from "./TotalReturnCard";
 import { TaxLotsTable } from "./TaxLotsTable";
@@ -34,6 +35,31 @@ function MetricCard({ label, value, sub, valueClass }: { label: string; value: s
 export function HoldingDetailShell({ position, taxLots, etfExposure, dividends }: Props) {
   const isEtf = position.assetClass === "ETF" || position.assetClass === "FUND";
 
+  // ── Live price feed ──────────────────────────────────────────────
+  const [livePrices, setLivePrices] = useState<Record<string, LivePrice>>({});
+  const handlePricesUpdate = useCallback((prices: Record<string, LivePrice>) => {
+    setLivePrices(prices);
+  }, []);
+  useLivePrices([position], handlePricesUpdate);
+
+  // Enrich position with live price if available
+  const live = position.ticker ? livePrices[position.ticker] : undefined;
+  const livePrice   = live?.price ?? position.currentPrice;
+  const liveMV      = live != null && position.assetClass !== "CASH"
+    ? position.quantity * live.price
+    : position.marketValue;
+  const liveGain    = liveMV - position.bookValue;
+  const liveGainPct = position.bookValue > 0 ? (liveGain / position.bookValue) * 100 : 0;
+
+  const livePosition: PositionRow = {
+    ...position,
+    currentPrice:      livePrice,
+    marketValue:       liveMV,
+    unrealizedGain:    liveGain,
+    unrealizedGainPct: liveGainPct,
+  };
+  // ─────────────────────────────────────────────────────────────────
+
   const hasYahooTicker = !!position.ticker && position.assetClass !== "CASH";
   const showDividendTab =
     hasYahooTicker &&
@@ -52,16 +78,16 @@ export function HoldingDetailShell({ position, taxLots, etfExposure, dividends }
   const [activeTab, setActiveTab] = useState<Tab>("overview");
 
   const color = ASSET_CLASS_COLORS[position.assetClass];
-  const isGain = position.unrealizedGain >= 0;
+  const isGain = liveGain >= 0;
 
   // Key metrics for overview sidebar
   const totalDividendsReceived = dividends.filter((d) => !d.isProjected).reduce((s, d) => s + d.totalAmount, 0);
   const ttmDivs = dividends.filter((d) => {
     if (d.isProjected) return false;
-    const age = (new Date("2026-03-28").getTime() - new Date(d.exDate).getTime()) / 86_400_000;
+    const age = (Date.now() - new Date(d.exDate).getTime()) / 86_400_000;
     return age <= 365;
   }).reduce((s, d) => s + d.totalAmount, 0);
-  const yieldOnMarket = position.marketValue > 0 && ttmDivs > 0 ? (ttmDivs / position.marketValue) * 100 : null;
+  const yieldOnMarket = liveMV > 0 && ttmDivs > 0 ? (ttmDivs / liveMV) * 100 : null;
 
   return (
     <div className="space-y-5">
@@ -89,15 +115,20 @@ export function HoldingDetailShell({ position, taxLots, etfExposure, dividends }
           </div>
           <div className="text-right shrink-0">
             <p className="text-2xl font-bold text-slate-900">
-              {formatCurrency(position.marketValue, position.currency)}
+              {formatCurrency(liveMV, position.currency)}
             </p>
-            <p className={cn("text-sm font-medium mt-0.5", gainColor(position.unrealizedGain))}>
-              {isGain ? "+" : ""}{formatCurrency(position.unrealizedGain, position.currency)}{" "}
-              ({isGain ? "+" : ""}{formatPercent(position.unrealizedGainPct)})
+            <p className={cn("text-sm font-medium mt-0.5", gainColor(liveGain))}>
+              {isGain ? "+" : ""}{formatCurrency(liveGain, position.currency)}{" "}
+              ({isGain ? "+" : ""}{formatPercent(liveGainPct)})
             </p>
             <p className="text-[10px] text-slate-400 mt-0.5">
               {position.quantity.toLocaleString("de-DE")} Stk. · Ø{" "}
               {formatCurrency(position.avgCostBasis, position.currency, { maximumFractionDigits: 2 })}
+              {live && (
+                <span className="ml-1 text-emerald-600">
+                  · Live {formatCurrency(livePrice, live.currency, { maximumFractionDigits: 2 })}
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -135,7 +166,7 @@ export function HoldingDetailShell({ position, taxLots, etfExposure, dividends }
 
           {/* 2-col: total return + key metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <TotalReturnCard position={position} dividends={dividends} />
+            <TotalReturnCard position={livePosition} dividends={dividends} />
 
             {/* Key metrics card */}
             <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-3">
@@ -144,18 +175,18 @@ export function HoldingDetailShell({ position, taxLots, etfExposure, dividends }
                 {[
                   {
                     label: "Marktwert",
-                    value: formatCurrency(position.marketValue, position.currency),
+                    value: formatCurrency(liveMV, position.currency),
                   },
                   {
-                    label: "Buchwert",
+                    label: "Buchwert (Einstand)",
                     value: formatCurrency(position.bookValue, position.currency),
                   },
                   {
-                    label: "Kurs",
-                    value: formatCurrency(position.currentPrice, position.currency, { maximumFractionDigits: 2 }),
+                    label: live ? "Kurs (Live)" : "Kurs (Snapshot)",
+                    value: formatCurrency(livePrice, position.currency, { maximumFractionDigits: 2 }),
                   },
                   {
-                    label: "Ø Einstand",
+                    label: "Ø Einstandspreis",
                     value: formatCurrency(position.avgCostBasis, position.currency, { maximumFractionDigits: 2 }),
                   },
                   ...(yieldOnMarket != null

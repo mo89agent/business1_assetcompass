@@ -37,8 +37,15 @@ export function HoldingsTable({ positions, livePrices = {}, liveUpdatedAt, onEdi
     else { setSort(key); setSortDir("desc"); }
   }
 
-  const totalValue = sorted.reduce((s, p) => s + p.marketValue, 0);
-  const totalGain = sorted.reduce((s, p) => s + p.unrealizedGain, 0);
+  const totalValue = sorted.reduce((s, p) => {
+    const live = p.ticker ? livePrices[p.ticker] : undefined;
+    return s + (live ? p.quantity * live.price : p.marketValue);
+  }, 0);
+  const totalGain = sorted.reduce((s, p) => {
+    const live = p.ticker ? livePrices[p.ticker] : undefined;
+    const mv = live ? p.quantity * live.price : p.marketValue;
+    return s + (mv - p.bookValue);
+  }, 0);
   const totalBook = sorted.reduce((s, p) => s + p.bookValue, 0);
   const totalGainPct = totalBook > 0 ? (totalGain / totalBook) * 100 : 0;
 
@@ -130,6 +137,12 @@ export function HoldingsTable({ positions, livePrices = {}, liveUpdatedAt, onEdi
               const live = pos.ticker ? livePrices[pos.ticker] : undefined;
               const liveUp = live ? live.changePct >= 0 : true;
 
+              // Compute effective values: live price takes precedence over DB snapshot
+              const effectivePrice = live?.price ?? pos.currentPrice;
+              const effectiveMV = live != null ? pos.quantity * live.price : pos.marketValue;
+              const effectiveGain = effectiveMV - pos.bookValue;
+              const effectiveGainPct = pos.bookValue > 0 ? (effectiveGain / pos.bookValue) * 100 : 0;
+
               return (
                 <tr
                   key={pos.id}
@@ -199,31 +212,41 @@ export function HoldingsTable({ positions, livePrices = {}, liveUpdatedAt, onEdi
                   {/* Market value */}
                   <td className="px-3 py-3 text-right">
                     <span className="text-sm font-semibold text-slate-900">
-                      {formatCurrency(pos.marketValue, pos.currency)}
+                      {formatCurrency(effectiveMV, pos.currency)}
                     </span>
+                    {live && (
+                      <p className="text-[10px] text-slate-400">
+                        {formatCurrency(effectivePrice, live.currency, { maximumFractionDigits: 2 })}
+                      </p>
+                    )}
                   </td>
 
-                  {/* Gain/loss */}
+                  {/* Gain/loss — computed from live price when available */}
                   <td className="px-3 py-3 text-right">
                     <div className="flex flex-col items-end">
-                      <span className={cn("text-xs font-medium px-1.5 py-0.5 rounded", gainBg(pos.unrealizedGain))}>
-                        {pos.unrealizedGain >= 0 ? "+" : ""}{formatPercent(pos.unrealizedGainPct)}
+                      <span className={cn("text-xs font-medium px-1.5 py-0.5 rounded", gainBg(effectiveGain))}>
+                        {effectiveGain >= 0 ? "+" : ""}{formatPercent(effectiveGainPct)}
                       </span>
-                      <span className={cn("text-xs mt-0.5", gainColor(pos.unrealizedGain))}>
-                        {pos.unrealizedGain >= 0 ? "+" : ""}{formatCurrency(pos.unrealizedGain, pos.currency)}
+                      <span className={cn("text-xs mt-0.5", gainColor(effectiveGain))}>
+                        {effectiveGain >= 0 ? "+" : ""}{formatCurrency(effectiveGain, pos.currency)}
                       </span>
                     </div>
                   </td>
 
-                  {/* Weight */}
+                  {/* Weight — recomputed from effective market value */}
                   <td className="px-4 py-3 text-right hidden md:table-cell">
-                    <div className="flex items-center justify-end gap-2">
-                      <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        {/* Bar scaled ×5 so a 20% position fills the bar; capped at 100% */}
-                        <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(pos.weight * 5, 100)}%` }} />
-                      </div>
-                      <span className="text-xs text-slate-500 w-8 text-right">{pos.weight.toFixed(1)}%</span>
-                    </div>
+                    {(() => {
+                      const liveWeight = totalValue > 0 ? (effectiveMV / totalValue) * 100 : pos.weight;
+                      return (
+                        <div className="flex items-center justify-end gap-2">
+                          <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            {/* Bar scaled ×5 so a 20% position fills the bar; capped at 100% */}
+                            <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(liveWeight * 5, 100)}%` }} />
+                          </div>
+                          <span className="text-xs text-slate-500 w-8 text-right">{liveWeight.toFixed(1)}%</span>
+                        </div>
+                      );
+                    })()}
                   </td>
 
                   {/* Edit master data */}
