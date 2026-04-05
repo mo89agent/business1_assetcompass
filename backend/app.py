@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from datetime import date
-from typing import List
+from typing import Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from .connectors import (
     fetch_report_text,
+    fetch_yahoo_detail,
+    fetch_yahoo_etf_detail,
+    fetch_yahoo_history,
     fetch_yahoo_quote,
     normalize_broker_rows,
     parse_broker_csv,
@@ -32,13 +36,13 @@ from .core import (
 )
 from .storage import init_db, insert_earnings_result, list_holdings, list_recent_earnings, upsert_holding
 
-app = FastAPI(title="Personal Wealth Management API", version="0.3.0")
-
-
-@app.on_event("startup")
-def startup_event() -> None:
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     init_db()
+    yield
 
+
+app = FastAPI(title="Personal Wealth Management API", version="0.3.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -58,7 +62,7 @@ class PositionIn(BaseModel):
 
 class PortfolioIn(BaseModel):
     positions: List[PositionIn]
-    annual_dividend_per_share: dict[str, float] = {}
+    annual_dividend_per_share: Dict[str, float] = {}
 
 
 class CashflowIn(BaseModel):
@@ -91,9 +95,9 @@ class EarningsIn(BaseModel):
 
 class HoldingIn(BaseModel):
     symbol: str
-    name: str | None = None
+    name: Optional[str] = None
     quantity: float = 0.0
-    earnings_url: str | None = None
+    earnings_url: Optional[str] = None
 
 
 
@@ -209,7 +213,7 @@ def earnings_refresh_holdings() -> dict:
 
 
 @app.get("/api/earnings/recent")
-def earnings_recent(limit: int = 20) -> dict:
+def earnings_recent(limit: int = Query(default=20, ge=1, le=200)) -> dict:
     return {"rows": list_recent_earnings(limit)}
 
 
@@ -219,6 +223,30 @@ def market_quote(symbol: str) -> dict:
         return fetch_yahoo_quote(symbol)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Quote fetch failed: {exc}") from exc
+
+
+@app.get("/api/market/detail/{symbol}")
+def market_detail(symbol: str) -> dict:
+    try:
+        return fetch_yahoo_detail(symbol)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Detail fetch failed: {exc}") from exc
+
+
+@app.get("/api/market/etf/{symbol}")
+def market_etf_detail(symbol: str) -> dict:
+    try:
+        return fetch_yahoo_etf_detail(symbol)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"ETF detail fetch failed: {exc}") from exc
+
+
+@app.get("/api/market/history/{symbol}")
+def market_history(symbol: str, range: str = "1y") -> dict:
+    try:
+        return fetch_yahoo_history(symbol, range)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"History fetch failed: {exc}") from exc
 
 
 @app.post("/api/broker/parse_csv")

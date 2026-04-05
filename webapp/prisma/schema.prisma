@@ -1,0 +1,788 @@
+// ============================================================
+// AssetCompass — Prisma Schema
+// Personal Wealth OS — Ledger-based, multi-entity, multi-currency
+// ============================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum UserRole {
+  OWNER
+  MEMBER
+  VIEWER
+}
+
+enum EntityType {
+  INDIVIDUAL
+  COUPLE
+  PARTNERSHIP
+  COMPANY
+  TRUST
+}
+
+enum AssetClass {
+  STOCK
+  ETF
+  FUND
+  BOND
+  CASH
+  CRYPTO
+  REAL_ESTATE
+  PRIVATE_EQUITY
+  GOLD
+  COLLECTIBLE
+  LOAN_RECEIVABLE
+  LIABILITY
+  OTHER
+}
+
+enum AccountType {
+  BROKERAGE
+  BANK_ACCOUNT
+  SAVINGS_ACCOUNT
+  FIXED_DEPOSIT
+  CRYPTO_EXCHANGE
+  CRYPTO_WALLET
+  PROPERTY
+  LOAN_ACCOUNT
+  PENSION
+  OTHER
+}
+
+enum TransactionType {
+  BUY
+  SELL
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER_IN
+  TRANSFER_OUT
+  DIVIDEND
+  INTEREST_INCOME
+  INTEREST_EXPENSE
+  RENT_INCOME
+  FEE
+  TAX
+  STOCK_SPLIT
+  STOCK_MERGER
+  SPIN_OFF
+  MANUAL_ADJUSTMENT
+  LOAN_PAYMENT
+  PRINCIPAL_PAYMENT
+  INTEREST_PAYMENT
+  STAKING_REWARD
+  MINING_REWARD
+  TOKEN_SWAP
+  BRIDGE_IN
+  BRIDGE_OUT
+  RETURN_OF_CAPITAL
+  CAPITAL_CALL
+  DISTRIBUTION
+}
+
+enum ImportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  PARTIAL
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum AlertType {
+  MISSING_COST_BASIS
+  BROKEN_IMPORT
+  DUPLICATE_TRANSACTION
+  LOAN_RESET_UPCOMING
+  CONCENTRATION_RISK
+  NEGATIVE_CASHFLOW
+  TAX_READINESS_GAP
+  MISSING_VALUATION
+  EXPIRING_FIXED_RATE
+  UNUSUAL_TRANSACTION
+}
+
+enum ValuationSource {
+  MANUAL
+  IMPORT
+  PRICE_FEED
+  CALCULATED
+}
+
+enum DocumentCategory {
+  STATEMENT
+  TAX_DOCUMENT
+  LOAN_CONTRACT
+  PROPERTY_DOCUMENT
+  IMPORT_CSV
+  IMPORT_EVIDENCE
+  IDENTIFICATION
+  INSURANCE
+  OTHER
+}
+
+enum ScenarioType {
+  EQUITY_CRASH
+  CRYPTO_CRASH
+  REAL_ESTATE_DECLINE
+  INTEREST_RATE_RISE
+  INFLATION_SHOCK
+  VACANCY_RENT_LOSS
+  INCOME_DROP
+  CUSTOM
+}
+
+// ============================================================
+// IDENTITY & ACCESS
+// ============================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  passwordHash  String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  workspaceMembers WorkspaceMember[]
+  sessions         Session[]
+  auditEvents      AuditEvent[]
+
+  @@index([email])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================================
+// WORKSPACE / HOUSEHOLD
+// ============================================================
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  currency  String   @default("EUR")
+  timezone  String   @default("Europe/Berlin")
+  country   String   @default("DE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members      WorkspaceMember[]
+  entities     Entity[]
+  accounts     Account[]
+  instruments  Instrument[]
+  transactions Transaction[]
+  valuations   Valuation[]
+  importJobs   ImportJob[]
+  documents    Document[]
+  alerts       Alert[]
+  scenarios    Scenario[]
+  forecasts    ForecastAssumption[]
+  taxPolicies  TaxPolicy[]
+  pricePoints  PricePoint[]
+  auditEvents  AuditEvent[]
+
+  @@index([slug])
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        UserRole @default(MEMBER)
+  joinedAt    DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+}
+
+// ============================================================
+// ENTITIES
+// ============================================================
+
+model Entity {
+  id          String     @id @default(cuid())
+  workspaceId String
+  name        String
+  type        EntityType @default(INDIVIDUAL)
+  taxId       String?
+  country     String?
+  currency    String     @default("EUR")
+  notes       String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  accounts  Account[]
+
+  @@index([workspaceId])
+}
+
+// ============================================================
+// ACCOUNTS
+// ============================================================
+
+model Account {
+  id            String      @id @default(cuid())
+  workspaceId   String
+  entityId      String?
+  name          String
+  type          AccountType
+  currency      String      @default("EUR")
+  institution   String?
+  accountNumber String?
+  iban          String?
+  isActive      Boolean     @default(true)
+  notes         String?
+  openedAt      DateTime?
+  closedAt      DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  entity       Entity?       @relation(fields: [entityId], references: [id])
+  transactions Transaction[]
+  positions    Position[]
+  property     Property?
+  loanDetails  LoanDetails?
+  documents    Document[]
+  valuations   Valuation[]
+
+  @@index([workspaceId])
+  @@index([entityId])
+}
+
+// ============================================================
+// INSTRUMENTS
+// ============================================================
+
+model Instrument {
+  id              String     @id @default(cuid())
+  workspaceId     String
+  isin            String?
+  ticker          String?
+  name            String
+  assetClass      AssetClass
+  currency        String
+  exchange        String?
+  country         String?
+  sector          String?
+  ter             Float?
+  contractAddress String?
+  network         String?
+  description     String?
+  logoUrl         String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  workspace    Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  positions    Position[]
+  pricePoints  PricePoint[]
+
+  @@unique([workspaceId, isin])
+  @@index([workspaceId])
+  @@index([ticker])
+}
+
+// ============================================================
+// POSITIONS
+// ============================================================
+
+model Position {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  accountId    String
+  instrumentId String
+  quantity     Decimal  
+  avgCostBasis Decimal  
+  bookValue    Decimal  
+  currency     String
+  openedAt     DateTime?
+  closedAt     DateTime?
+  updatedAt    DateTime  @updatedAt
+
+  account    Account    @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  instrument Instrument @relation(fields: [instrumentId], references: [id])
+  lots       TaxLot[]
+
+  @@unique([accountId, instrumentId])
+  @@index([workspaceId])
+  @@index([accountId])
+}
+
+model TaxLot {
+  id            String    @id @default(cuid())
+  positionId    String
+  transactionId String
+  acquiredAt    DateTime
+  quantity      Decimal  
+  remainingQty  Decimal  
+  costPerUnit   Decimal  
+  totalCost     Decimal  
+  currency      String
+  closed        Boolean   @default(false)
+  closedAt      DateTime?
+
+  position Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+
+  @@index([positionId])
+}
+
+// ============================================================
+// TRANSACTIONS / LEDGER
+// ============================================================
+
+model Transaction {
+  id           String          @id @default(cuid())
+  workspaceId  String
+  accountId    String
+  instrumentId String?
+  type         TransactionType
+  quantity     Decimal?       
+  price        Decimal?       
+  amount       Decimal        
+  currency     String
+  amountBase   Decimal?       
+  fxRate       Decimal?       
+  fees         Decimal         @default(0)
+  taxes        Decimal         @default(0)
+  feesCurrency String?
+  executedAt   DateTime
+  settledAt    DateTime?
+  // Transfer matching — links outbound + inbound sides
+  transferMatchId String?
+  // Correction chain
+  parentId        String?
+  importJobId     String?
+  importRowRef    String?
+  provenance      String?
+  isVerified      Boolean @default(false)
+  isDuplicate     Boolean @default(false)
+  isDeleted       Boolean @default(false)
+  description     String?
+  notes           String?
+  tags            String   @default("") // comma-separated, SQLite compat
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  workspace  Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  account    Account     @relation(fields: [accountId], references: [id])
+  instrument Instrument? @relation(fields: [instrumentId], references: [id])
+  importJob  ImportJob?  @relation(fields: [importJobId], references: [id])
+
+  @@index([workspaceId, executedAt])
+  @@index([accountId])
+  @@index([instrumentId])
+  @@index([transferMatchId])
+  @@index([importJobId])
+}
+
+// ============================================================
+// REAL ESTATE
+// ============================================================
+
+model Property {
+  id                  String    @id @default(cuid())
+  accountId           String    @unique
+  address             String
+  city                String
+  postalCode          String?
+  country             String    @default("DE")
+  propertyType        String
+  usageType           String
+  units               Int       @default(1)
+  floorAreaSqm        Float?
+  buildYear           Int?
+  energyClass         String?
+  acquisitionDate     DateTime?
+  acquisitionPrice    Decimal? 
+  acquisitionCurrency String    @default("EUR")
+  ancillaryCosts      Decimal? 
+  currentValue        Decimal? 
+  currentValueDate    DateTime?
+  targetRentMonthly   Decimal? 
+  actualRentMonthly   Decimal? 
+  vacancyRate         Float?    @default(0.0)
+  operatingCostsMonthly Decimal?
+  maintenanceReserve    Decimal?
+  notes               String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  account    Account         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  loans      LoanDetails[]
+  leases     LeaseContract[]
+  capexItems CapexItem[]
+
+  @@index([accountId])
+}
+
+model LeaseContract {
+  id          String    @id @default(cuid())
+  propertyId  String
+  tenantName  String?
+  unit        String?
+  rentMonthly Decimal  
+  currency    String    @default("EUR")
+  startDate   DateTime
+  endDate     DateTime?
+  deposit     Decimal? 
+  isActive    Boolean   @default(true)
+  notes       String?
+  createdAt   DateTime  @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+}
+
+model CapexItem {
+  id          String   @id @default(cuid())
+  propertyId  String
+  description String
+  date        DateTime
+  amount      Decimal 
+  currency    String   @default("EUR")
+  category    String?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+}
+
+// ============================================================
+// LOANS & DEBT
+// ============================================================
+
+model LoanDetails {
+  id                 String    @id @default(cuid())
+  accountId          String?   @unique
+  propertyId         String?
+  lenderName         String?
+  loanType           String
+  principalOriginal  Decimal  
+  principalRemaining Decimal  
+  currency           String    @default("EUR")
+  interestRate       Float
+  isFixedRate        Boolean   @default(true)
+  fixedRateUntil     DateTime?
+  monthlyPayment     Decimal? 
+  amortizationYears  Float?
+  startDate          DateTime?
+  maturityDate       DateTime?
+  ltv                Float?
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  account  Account?  @relation(fields: [accountId], references: [id])
+  property Property? @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+}
+
+// ============================================================
+// VALUATIONS & PRICES
+// ============================================================
+
+model Valuation {
+  id          String          @id @default(cuid())
+  workspaceId String
+  accountId   String
+  value       Decimal        
+  currency    String
+  valuedAt    DateTime
+  source      ValuationSource @default(MANUAL)
+  notes       String?
+  createdAt   DateTime        @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  account   Account   @relation(fields: [accountId], references: [id])
+
+  @@index([workspaceId, accountId, valuedAt])
+}
+
+model PricePoint {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  instrumentId String
+  price        Decimal 
+  currency     String
+  date         DateTime
+  source       String
+  createdAt    DateTime @default(now())
+
+  workspace  Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  instrument Instrument @relation(fields: [instrumentId], references: [id])
+
+  @@unique([workspaceId, instrumentId, date])
+  @@index([workspaceId, instrumentId])
+}
+
+// ============================================================
+// DOCUMENTS
+// ============================================================
+
+model Document {
+  id          String           @id @default(cuid())
+  workspaceId String
+  accountId   String?
+  name        String
+  category    DocumentCategory @default(OTHER)
+  mimeType    String?
+  sizeBytes   Int?
+  storageKey  String
+  storageUrl  String?
+  checksum    String?
+  importJobId String?
+  description String?
+  tags        String   @default("") // comma-separated, SQLite compat
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  account   Account?   @relation(fields: [accountId], references: [id])
+  importJob ImportJob? @relation(fields: [importJobId], references: [id])
+
+  @@index([workspaceId])
+  @@index([accountId])
+}
+
+// ============================================================
+// IMPORTS
+// ============================================================
+
+model ImportJob {
+  id            String       @id @default(cuid())
+  workspaceId   String
+  accountId     String?
+  filename      String
+  fileKey       String
+  status        ImportStatus @default(PENDING)
+  rowsTotal     Int?
+  rowsImported  Int?
+  rowsSkipped   Int?
+  rowsFailed    Int?
+  errorMessage  String?
+  mappingRuleId String?
+  contentHash   String?
+  importedBy    String
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime     @default(now())
+
+  workspace     Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  transactions  Transaction[]
+  documents     Document[]
+  mappingRule   ImportMappingRule? @relation(fields: [mappingRuleId], references: [id])
+  rawRows       ImportRawRow[]
+
+  @@index([workspaceId])
+}
+
+model ImportMappingRule {
+  id               String     @id @default(cuid())
+  workspaceId      String
+  name             String
+  institution      String?
+  assetClass       AssetClass?
+  columnMap        Json
+  dateFormat       String     @default("yyyy-MM-dd")
+  decimalSeparator String     @default(".")
+  currencyColumn   String?
+  defaultCurrency  String     @default("EUR")
+  typeDetectionRules Json?
+  isActive         Boolean    @default(true)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  importJobs ImportJob[]
+
+  @@index([workspaceId])
+}
+
+model ImportRawRow {
+  id            String   @id @default(cuid())
+  importJobId   String
+  rowNumber     Int
+  rawData       Json
+  parsedData    Json?
+  transactionId String?
+  status        String   @default("pending")
+  errorMessage  String?
+  createdAt     DateTime @default(now())
+
+  importJob ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+
+  @@index([importJobId])
+}
+
+// ============================================================
+// FORECASTING & SCENARIOS
+// ============================================================
+
+model ForecastAssumption {
+  id                     String   @id @default(cuid())
+  workspaceId            String
+  name                   String
+  isDefault              Boolean  @default(false)
+  equityReturnAnnual     Float    @default(0.07)
+  bondReturnAnnual       Float    @default(0.03)
+  realEstateAppreciation Float    @default(0.03)
+  cryptoReturnAnnual     Float    @default(0.15)
+  cashReturnAnnual       Float    @default(0.025)
+  inflationRate          Float    @default(0.02)
+  annualContribution     Decimal  @default(0)
+  annualWithdrawal       Decimal  @default(0)
+  contributionGrowthRate Float    @default(0.03)
+  avgFeeRate             Float    @default(0.005)
+  effectiveTaxRate       Float    @default(0.265)
+  notes                  String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  scenarios Scenario[]
+
+  @@index([workspaceId])
+}
+
+model Scenario {
+  id                 String       @id @default(cuid())
+  workspaceId        String
+  assumptionId       String?
+  name               String
+  type               ScenarioType @default(CUSTOM)
+  description        String?
+  equityShock        Float?
+  cryptoShock        Float?
+  realEstateShock    Float?
+  interestRateChange Float?
+  inflationChange    Float?
+  rentLossRate       Float?
+  incomeDropRate     Float?
+  resultSnapshot     Json?
+  computedAt         DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  workspace  Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  assumption ForecastAssumption? @relation(fields: [assumptionId], references: [id])
+
+  @@index([workspaceId])
+}
+
+// ============================================================
+// TAX POLICY
+// ============================================================
+
+model TaxPolicy {
+  id                     String   @id @default(cuid())
+  workspaceId            String
+  name                   String
+  country                String   @default("DE")
+  year                   Int
+  isActive               Boolean  @default(true)
+  capitalGainsTaxRate    Float    @default(0.25)
+  soliRate               Float    @default(0.055)
+  churchTaxRate          Float    @default(0.0)
+  freistellungsauftrag   Float    @default(1000)
+  spekulationsfristYears Int      @default(10)
+  rules                  Json?
+  notes                  String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+// ============================================================
+// ALERTS
+// ============================================================
+
+model Alert {
+  id            String        @id @default(cuid())
+  workspaceId   String
+  type          AlertType
+  severity      AlertSeverity @default(WARNING)
+  title         String
+  message       String
+  accountId     String?
+  instrumentId  String?
+  transactionId String?
+  isRead        Boolean       @default(false)
+  isDismissed   Boolean       @default(false)
+  resolvedAt    DateTime?
+  metadata      Json?
+  createdAt     DateTime      @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, isRead])
+  @@index([workspaceId, type])
+}
+
+// ============================================================
+// AUDIT
+// ============================================================
+
+model AuditEvent {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String?
+  action      String
+  resource    String?
+  resourceId  String?
+  before      Json?
+  after       Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id])
+
+  @@index([workspaceId, createdAt])
+  @@index([userId])
+}

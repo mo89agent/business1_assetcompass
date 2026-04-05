@@ -3,105 +3,516 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Personal Wealth Management – UI Prototype</title>
+  <title>AssetCompass – Wealth Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="app">
-    <aside class="sidebar">
-      <h1>Personal Wealth Management</h1>
-      <nav>
-        <button class="nav active" data-view="dashboard">Dashboard</button>
-        <button class="nav" data-view="stocks">Aktien & ETFs</button>
-        <button class="nav" data-view="asset">Asset Detail</button>
-        <button class="nav" data-view="dividends">Dividenden</button>
-        <button class="nav" data-view="news">News</button>
-        <button class="nav" data-view="earnings">Earnings</button>
-        <button class="nav" data-view="scenario">Szenarien</button>
+    <!-- ═══════════ SIDEBAR ═══════════ -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">AC</div>
+        <div>
+          <div class="logo-name">AssetCompass</div>
+          <div class="logo-sub">Wealth Intelligence</div>
+        </div>
+      </div>
+
+      <div class="sidebar-section-label">Analyse</div>
+      <nav class="sidebar-nav">
+        <button class="nav active" data-view="dashboard">
+          <span class="nav-icon">◈</span><span>Dashboard</span>
+        </button>
+        <button class="nav" data-view="analyse">
+          <span class="nav-icon">⬡</span><span>Kurs &amp; Analyse</span>
+        </button>
+        <button class="nav" data-view="portfolio">
+          <span class="nav-icon">◧</span><span>Portfolio</span>
+        </button>
+        <button class="nav" data-view="etf">
+          <span class="nav-icon">◉</span><span>ETF Explorer</span>
+        </button>
       </nav>
-      <div class="lang">
-        <button id="deBtn" class="lang-btn active">DE</button>
-        <button id="enBtn" class="lang-btn">EN</button>
+
+      <div class="sidebar-section-label">Tools</div>
+      <nav class="sidebar-nav">
+        <button class="nav" data-view="dividends">
+          <span class="nav-icon">✦</span><span>Dividenden</span>
+        </button>
+        <button class="nav" data-view="earnings">
+          <span class="nav-icon">◎</span><span>Earnings</span>
+        </button>
+        <button class="nav" data-view="scenario">
+          <span class="nav-icon">◲</span><span>Szenarien</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="lang-switch">
+          <button id="deBtn" class="lang-btn active">DE</button>
+          <button id="enBtn" class="lang-btn">EN</button>
+        </div>
       </div>
     </aside>
 
+    <!-- ═══════════ MAIN CONTENT ═══════════ -->
     <main class="content">
+
+      <!-- ── TOPBAR ── -->
       <header class="topbar">
-        <h2 id="screenTitle">Dashboard</h2>
-        <button class="cta" id="primaryAction">Asset hinzufügen</button>
+        <div class="topbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+          <h2 class="screen-title" id="screenTitle">Dashboard</h2>
+        </div>
+        <div class="topbar-right">
+          <div class="search-mini">
+            <input type="text" id="globalSearch" placeholder="Symbol suchen…" autocomplete="off" />
+            <div class="search-dropdown" id="searchDropdown"></div>
+          </div>
+          <div class="market-status">
+            <span class="status-dot"></span>
+            <span class="status-text">Live</span>
+          </div>
+        </div>
       </header>
 
-      <section id="dashboard" class="view active">
-        <article class="card">
-          <h3>Start: Daten hochladen (CSV)</h3>
-          <p>Format: <code>symbol,quantity,avg_cost,price,annual_dividend_per_share</code></p>
-          <input type="file" id="portfolioFile" accept=".csv" />
-          <button id="loadPortfolioBtn" class="cta">Portfolio laden</button>
-          <small id="loadStatus">Noch kein Portfolio geladen.</small>
-        </article>
-        <div class="kpis">
-          <article class="card"><h3 data-i18n="networth">Gesamtvermögen</h3><p id="kpiNetWorth">€ 0</p></article>
-          <article class="card"><h3 data-i18n="day_change">Unrealized P/L</h3><p class="pos" id="kpiPnl">€ 0</p></article>
-          <article class="card"><h3 data-i18n="monthly_cashflow">Monats-Cashflow</h3><p id="kpiCashflow">€ 0</p></article>
-          <article class="card"><h3 data-i18n="dividend_forecast">Dividenden (12M)</h3><p id="kpiDividend">€ 0</p></article>
+      <!-- ══════════════════════════════ -->
+      <!--  VIEW: DASHBOARD              -->
+      <!-- ══════════════════════════════ -->
+      <section id="view-dashboard" class="view active">
+        <!-- KPI row -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Gesamtvermögen</div>
+            <div class="kpi-value" id="kpiNetWorth">€ –</div>
+            <div class="kpi-sub" id="kpiNetWorthSub">Portfolio laden</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Unrealisierter P/L</div>
+            <div class="kpi-value" id="kpiPnl">€ –</div>
+            <div class="kpi-sub" id="kpiPnlPct">–</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Monatl. Dividende</div>
+            <div class="kpi-value" id="kpiCashflow">€ –</div>
+            <div class="kpi-sub">Prognose</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Dividende (12M)</div>
+            <div class="kpi-value" id="kpiDividend">€ –</div>
+            <div class="kpi-sub">Jahresprognose</div>
+          </div>
+        </div>
+
+        <!-- Upload + Allocation row -->
+        <div class="dash-grid">
+          <!-- Upload -->
+          <div class="card upload-card">
+            <div class="card-header">
+              <span class="card-title">Portfolio laden</span>
+            </div>
+            <p class="upload-hint">Format: <code>symbol, quantity, avg_cost, price, annual_dividend_per_share</code></p>
+            <div class="upload-zone" id="uploadZone">
+              <div class="upload-icon">⬆</div>
+              <div class="upload-text">CSV hierher ziehen oder klicken</div>
+              <input type="file" id="portfolioFile" accept=".csv" />
+            </div>
+            <div class="upload-actions">
+              <button id="loadPortfolioBtn" class="btn btn-primary">Portfolio laden</button>
+              <span class="upload-status" id="loadStatus">Noch kein Portfolio geladen.</span>
+            </div>
+          </div>
+
+          <!-- Donut chart -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Allokation</span>
+            </div>
+            <div class="donut-wrap">
+              <canvas id="donutChart" width="200" height="200"></canvas>
+              <div class="donut-center" id="donutCenter">
+                <div class="donut-center-val">–</div>
+                <div class="donut-center-lbl">Positionen</div>
+              </div>
+            </div>
+            <ul class="legend-list" id="allocationLegend"></ul>
+          </div>
+
+          <!-- Top / Flop -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Top &amp; Flop</span>
+            </div>
+            <div class="mini-section-label">Beste</div>
+            <table class="mini-table">
+              <tbody id="topAssetsBody"><tr><td colspan="3" class="muted-cell">–</td></tr></tbody>
+            </table>
+            <div class="mini-section-label mt8">Schwächste</div>
+            <table class="mini-table">
+              <tbody id="flopAssetsBody"><tr><td colspan="3" class="muted-cell">–</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </section>
 
-      <section id="stocks" class="view">
-        <article class="card">
-          <h3>Gesamtliste Assets (Aktien/ETFs)</h3>
-          <table>
-            <thead><tr><th>Ticker</th><th>Menge</th><th>Einstand</th><th>Kurs</th><th>Marktwert</th><th>Gewicht</th></tr></thead>
-            <tbody id="stocksTableBody"></tbody>
-          </table>
-        </article>
-      </section>
-
-      <section id="asset" class="view">
-        <article class="card">
-          <h3>Asset Detail – AAPL</h3>
-          <div class="grid2">
-            <div class="placeholder">Preis-Chart + Drawdown</div>
-            <div class="card"><h3>Kennzahlen</h3><ul><li>P/E: 28.4</li><li>Gross Margin: 46%</li><li>Dividend Yield: 0.5%</li></ul></div>
+      <!-- ══════════════════════════════ -->
+      <!--  VIEW: ANALYSE                -->
+      <!-- ══════════════════════════════ -->
+      <section id="view-analyse" class="view">
+        <!-- Search bar -->
+        <div class="analyse-search">
+          <div style="display:flex;gap:10px;margin-bottom:10px">
+            <input type="text" id="analyseSearch" class="analyse-search-input" style="margin-bottom:0" placeholder="Symbol eingeben: AAPL, MSFT, ORCL, IVV …" autocomplete="off" />
+            <button class="btn btn-primary" id="analyseSearchBtn" style="white-space:nowrap">Analysieren</button>
           </div>
-          <p><strong>Yahoo Quote:</strong> <span id="quoteOutput">nicht geladen</span></p>
-          <button id="loadQuoteBtn" class="cta">Realtime Quote laden</button>
-        </article>
-      </section>
+          <div class="quick-chips">
+            <button class="chip" data-sym="AAPL">AAPL</button>
+            <button class="chip" data-sym="MSFT">MSFT</button>
+            <button class="chip" data-sym="NVDA">NVDA</button>
+            <button class="chip" data-sym="ORCL">ORCL</button>
+            <button class="chip" data-sym="IVV">IVV (S&amp;P500)</button>
+            <button class="chip" data-sym="QQQ">QQQ (Nasdaq)</button>
+          </div>
+        </div>
 
-      <section id="dividends" class="view"><article class="card"><h3>Dividenden Forecast</h3><div class="placeholder">wird aus Portfolio berechnet</div></article></section>
-      <section id="news" class="view"><article class="card"><h3>News & Priorisierung</h3><div class="placeholder">nächster Schritt</div></article></section>
+        <!-- Loading / empty state -->
+        <div class="analyse-empty" id="analyseEmpty">
+          <div class="empty-icon">⬡</div>
+          <div class="empty-title">Aktie oder ETF analysieren</div>
+          <div class="empty-sub">Gib ein Börsenkürzel ein und erhalte umfassende Kennzahlen, Charts und Qualitätsbewertung</div>
+        </div>
 
-      <section id="earnings" class="view">
-        <article class="card">
-          <h3>Earnings Inbox (nur Holdings)</h3>
-          <p><button id="refreshEarningsBtn" class="cta">Holdings Earnings aktualisieren</button></p>
-          <pre id="earningsOutput">Noch keine Daten geladen.</pre>
-        </article>
-      </section>
+        <!-- Result panel -->
+        <div class="analyse-result hidden" id="analyseResult">
 
-      <section id="scenario" class="view">
-        <article class="card">
-          <h3>Szenario Tool (mathematisch)</h3>
-          <div class="grid2">
-            <div>
-              <label>Aktienschock % <input id="equityShock" type="range" min="0" max="60" value="20"></label>
-              <label>Zinsschock % <input id="rateShock" type="range" min="0" max="6" step="0.25" value="1.5"></label>
-              <label>Dividendenkürzung % <input id="divCut" type="range" min="0" max="60" value="10"></label>
-              <button id="applyScenarioBtn" class="cta">Szenario anwenden</button>
+          <!-- Stock header -->
+          <div class="stock-header card">
+            <div class="stock-header-left">
+              <div class="stock-badge" id="stockBadgeType">AKTIE</div>
+              <div>
+                <div class="stock-name" id="stockName">–</div>
+                <div class="stock-meta" id="stockMeta">–</div>
+              </div>
             </div>
-            <div class="card">
-              <h3>Ergebnis</h3>
-              <p><strong>Vorher:</strong> <span id="scBefore">€ 0</span></p>
-              <p><strong>Nachher:</strong> <span id="scAfter">€ 0</span></p>
-              <p><strong>Delta:</strong> <span id="scDelta">€ 0</span></p>
-              <p><strong>Delta %:</strong> <span id="scDeltaPct">0%</span></p>
+            <div class="stock-header-right">
+              <div class="stock-price" id="stockPrice">–</div>
+              <div class="stock-change" id="stockChange">–</div>
+            </div>
+            <div class="stock-kpi-row">
+              <div class="stock-kpi-item"><div class="skpi-label">Market Cap</div><div class="skpi-val" id="hdrMarketCap">–</div></div>
+              <div class="stock-kpi-item"><div class="skpi-label">KGV (trailing)</div><div class="skpi-val" id="hdrPE">–</div></div>
+              <div class="stock-kpi-item"><div class="skpi-label">KGV (forward)</div><div class="skpi-val" id="hdrFwdPE">–</div></div>
+              <div class="stock-kpi-item"><div class="skpi-label">KBV</div><div class="skpi-val" id="hdrPB">–</div></div>
+              <div class="stock-kpi-item"><div class="skpi-label">KUV</div><div class="skpi-val" id="hdrPS">–</div></div>
+              <div class="stock-kpi-item"><div class="skpi-label">EV/EBITDA</div><div class="skpi-val" id="hdrEvEbitda">–</div></div>
+              <div class="stock-kpi-item"><div class="skpi-label">Div. Rendite</div><div class="skpi-val" id="hdrDivYield">–</div></div>
+              <div class="stock-kpi-item"><div class="skpi-label">Beta</div><div class="skpi-val" id="hdrBeta">–</div></div>
+              <div class="stock-kpi-item"><div class="skpi-label">52W Hoch</div><div class="skpi-val" id="hdrW52H">–</div></div>
+              <div class="stock-kpi-item"><div class="skpi-label">52W Tief</div><div class="skpi-val" id="hdrW52L">–</div></div>
             </div>
           </div>
-        </article>
+
+          <!-- Tab navigation -->
+          <div class="tab-bar">
+            <button class="tab-btn active" data-tab="overview">Übersicht</button>
+            <button class="tab-btn" data-tab="quality">Qualitäts-Check</button>
+            <button class="tab-btn" data-tab="etfdetail" id="tabEtf" style="display:none">ETF-Details</button>
+            <button class="tab-btn" data-tab="financials">Fundamentaldaten</button>
+          </div>
+
+          <!-- Tab: Übersicht -->
+          <div class="tab-content active" id="tab-overview">
+            <div class="chart-section card">
+              <div class="chart-section-header">
+                <span class="card-title" id="chartSymbolLabel">Kursverlauf</span>
+                <div class="range-btns">
+                  <button class="range-btn" data-range="1mo">1M</button>
+                  <button class="range-btn" data-range="3mo">3M</button>
+                  <button class="range-btn" data-range="6mo">6M</button>
+                  <button class="range-btn active" data-range="1y">1J</button>
+                  <button class="range-btn" data-range="2y">2J</button>
+                  <button class="range-btn" data-range="5y">5J</button>
+                </div>
+              </div>
+              <div class="chart-perf-badge" id="chartPerfBadge"></div>
+              <div class="chart-container">
+                <canvas id="priceChart"></canvas>
+              </div>
+              <div class="chart-volume-container">
+                <canvas id="volumeChart"></canvas>
+              </div>
+            </div>
+
+            <!-- 52W Range Bar -->
+            <div class="card range-card">
+              <div class="card-title">52-Wochen-Spanne</div>
+              <div class="range-bar-wrap">
+                <span class="range-low" id="rangeBarLow">–</span>
+                <div class="range-bar-track">
+                  <div class="range-bar-fill" id="rangeBarFill"></div>
+                  <div class="range-bar-marker" id="rangeBarMarker"></div>
+                </div>
+                <span class="range-high" id="rangeBarHigh">–</span>
+              </div>
+              <div class="range-bar-price-label" id="rangeBarPriceLabel"></div>
+            </div>
+
+            <!-- Analyst consensus -->
+            <div class="card analyst-card">
+              <div class="card-title">Analysten-Konsens</div>
+              <div class="analyst-grid">
+                <div class="analyst-consensus" id="analystConsensus">–</div>
+                <div class="analyst-stats">
+                  <div><span class="muted">Kursziel Ø</span> <span id="analystTarget">–</span></div>
+                  <div><span class="muted">Tief</span> <span id="analystLow">–</span></div>
+                  <div><span class="muted">Hoch</span> <span id="analystHigh">–</span></div>
+                  <div><span class="muted">Analysten</span> <span id="analystCount">–</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Beschreibung -->
+            <div class="card" id="descCard">
+              <div class="card-title">Unternehmensbeschreibung</div>
+              <p class="desc-text" id="descText">–</p>
+            </div>
+          </div>
+
+          <!-- Tab: Qualitäts-Check -->
+          <div class="tab-content hidden" id="tab-quality">
+            <div class="quality-grid">
+              <!-- Radar chart -->
+              <div class="card">
+                <div class="card-title">Qualitätsprofil</div>
+                <div class="radar-container">
+                  <canvas id="radarChart"></canvas>
+                </div>
+                <div class="radar-legend" id="radarLegend"></div>
+              </div>
+
+              <!-- Scored dimensions -->
+              <div class="card">
+                <div class="card-title">Qualitäts-Check</div>
+                <div class="quality-score-badge" id="qualityScoreBadge">–/10</div>
+
+                <div class="quality-section">
+                  <div class="quality-section-title">Wachstum &amp; Stabilität</div>
+                  <div id="qGrowth"></div>
+                </div>
+                <div class="quality-section">
+                  <div class="quality-section-title">Profitabilität</div>
+                  <div id="qProfit"></div>
+                </div>
+                <div class="quality-section">
+                  <div class="quality-section-title">Sicherheit &amp; Bilanz</div>
+                  <div id="qSafety"></div>
+                </div>
+                <div class="quality-section">
+                  <div class="quality-section-title">Bewertung</div>
+                  <div id="qValue"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: ETF Details -->
+          <div class="tab-content hidden" id="tab-etfdetail">
+            <div class="etf-detail-grid">
+              <!-- ETF Meta -->
+              <div class="card">
+                <div class="card-title">ETF Kennzahlen</div>
+                <div class="etf-meta-grid" id="etfMetaGrid"></div>
+              </div>
+
+              <!-- Sector allocation -->
+              <div class="card">
+                <div class="card-title">Sektorgewichtung</div>
+                <div class="chart-container-sm">
+                  <canvas id="etfSectorChart"></canvas>
+                </div>
+              </div>
+
+              <!-- Top Holdings -->
+              <div class="card full-width">
+                <div class="card-title">Top 10 Holdings</div>
+                <table class="data-table">
+                  <thead><tr><th>Unternehmen</th><th>Symbol</th><th style="text-align:right">Gewicht</th><th>Gewichtsbalken</th></tr></thead>
+                  <tbody id="etfHoldingsBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Fundamentaldaten -->
+          <div class="tab-content hidden" id="tab-financials">
+            <div class="fundamentals-grid" id="fundamentalsGrid"></div>
+          </div>
+        </div>
       </section>
+
+      <!-- ══════════════════════════════ -->
+      <!--  VIEW: PORTFOLIO              -->
+      <!-- ══════════════════════════════ -->
+      <section id="view-portfolio" class="view">
+        <div class="port-grid">
+          <div class="card full-width">
+            <div class="card-header">
+              <span class="card-title">Positionen</span>
+              <input type="text" id="searchInput" class="search-box" placeholder="Symbol filtern…" />
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Ticker</th><th>Name</th><th>Menge</th>
+                  <th class="num">Einstand</th><th class="num">Kurs</th>
+                  <th class="num">Marktwert</th><th class="num">P/L</th>
+                  <th class="num">P/L %</th><th class="num">Gewicht</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="stocksTableBody">
+                <tr><td colspan="10" class="muted-cell">Kein Portfolio geladen. Gehe zum Dashboard und lade eine CSV.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════ -->
+      <!--  VIEW: ETF EXPLORER           -->
+      <!-- ══════════════════════════════ -->
+      <section id="view-etf" class="view">
+        <div class="etf-explorer-layout">
+          <!-- Filter sidebar -->
+          <div class="etf-filters card">
+            <div class="card-title">Filter</div>
+            <div class="filter-group">
+              <div class="filter-label">Assetklasse</div>
+              <label class="filter-check"><input type="checkbox" name="asset" value="equity" checked /> Aktien</label>
+              <label class="filter-check"><input type="checkbox" name="asset" value="bond" /> Anleihen</label>
+              <label class="filter-check"><input type="checkbox" name="asset" value="commodity" /> Rohstoffe</label>
+              <label class="filter-check"><input type="checkbox" name="asset" value="mixed" /> Gemischt</label>
+            </div>
+            <div class="filter-group">
+              <div class="filter-label">Region</div>
+              <label class="filter-check"><input type="checkbox" name="region" value="world" checked /> Global</label>
+              <label class="filter-check"><input type="checkbox" name="region" value="usa" checked /> USA</label>
+              <label class="filter-check"><input type="checkbox" name="region" value="europe" /> Europa</label>
+              <label class="filter-check"><input type="checkbox" name="region" value="asia" /> Asien</label>
+              <label class="filter-check"><input type="checkbox" name="region" value="em" /> Emerging Markets</label>
+            </div>
+            <div class="filter-group">
+              <div class="filter-label">Anlagestil</div>
+              <label class="filter-check"><input type="checkbox" name="style" value="broad" checked /> Breit</label>
+              <label class="filter-check"><input type="checkbox" name="style" value="growth" /> Growth</label>
+              <label class="filter-check"><input type="checkbox" name="style" value="value" /> Value</label>
+              <label class="filter-check"><input type="checkbox" name="style" value="dividend" /> Dividenden</label>
+              <label class="filter-check"><input type="checkbox" name="style" value="tech" /> Technologie</label>
+            </div>
+            <button class="btn btn-primary w100" id="etfFilterBtn">ETFs laden</button>
+          </div>
+
+          <!-- ETF grid -->
+          <div class="etf-grid-area">
+            <div class="etf-list-header">
+              <span class="muted">Beliebte ETFs</span>
+              <span class="muted" id="etfCount">– ETFs</span>
+            </div>
+            <div class="etf-cards-grid" id="etfCardsGrid">
+              <div class="muted-cell" style="padding:32px;grid-column:1/-1;text-align:center">ETFs laden klicken…</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════ -->
+      <!--  VIEW: DIVIDENDEN             -->
+      <!-- ══════════════════════════════ -->
+      <section id="view-dividends" class="view">
+        <div class="div-grid">
+          <div class="card full-width">
+            <div class="card-title">Monatliche Dividendenprognose</div>
+            <div class="chart-container">
+              <canvas id="divChart"></canvas>
+            </div>
+          </div>
+          <div class="card full-width">
+            <div class="card-title">Dividenden je Position</div>
+            <table class="data-table">
+              <thead><tr><th>Symbol</th><th class="num">Div. p.a.</th><th class="num">Div./Monat</th><th class="num">Yield auf EK</th></tr></thead>
+              <tbody id="dividendTableBody"><tr><td colspan="4" class="muted-cell">Kein Portfolio geladen.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════ -->
+      <!--  VIEW: EARNINGS               -->
+      <!-- ══════════════════════════════ -->
+      <section id="view-earnings" class="view">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Earnings Inbox</span>
+            <button id="refreshEarningsBtn" class="btn btn-primary">Holdings aktualisieren</button>
+          </div>
+          <div id="earningsCards"><p class="muted-cell">Noch keine Daten geladen.</p></div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════ -->
+      <!--  VIEW: SZENARIEN              -->
+      <!-- ══════════════════════════════ -->
+      <section id="view-scenario" class="view">
+        <div class="scenario-grid">
+          <div class="card">
+            <div class="card-title">Szenario konfigurieren</div>
+            <div class="slider-group">
+              <label class="slider-label">
+                <span>Aktienschock</span>
+                <span class="slider-val" id="equityShockVal">-20 %</span>
+              </label>
+              <input id="equityShock" type="range" min="0" max="60" value="20" class="slider" />
+            </div>
+            <div class="slider-group">
+              <label class="slider-label">
+                <span>Zinsschock</span>
+                <span class="slider-val" id="rateShockVal">+1.5 %</span>
+              </label>
+              <input id="rateShock" type="range" min="0" max="6" step="0.25" value="1.5" class="slider" />
+            </div>
+            <div class="slider-group">
+              <label class="slider-label">
+                <span>Dividendenkürzung</span>
+                <span class="slider-val" id="divCutVal">-10 %</span>
+              </label>
+              <input id="divCut" type="range" min="0" max="60" value="10" class="slider" />
+            </div>
+            <button id="applyScenarioBtn" class="btn btn-primary w100">Szenario anwenden</button>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Ergebnis</div>
+            <div class="scenario-result">
+              <div class="sc-row"><span class="muted">Portfolio vorher</span><span id="scBefore" class="sc-val">–</span></div>
+              <div class="sc-row"><span class="muted">Portfolio nachher</span><span id="scAfter" class="sc-val">–</span></div>
+              <div class="sc-divider"></div>
+              <div class="sc-row"><span class="muted">Verlust (€)</span><span id="scDelta" class="sc-val neg">–</span></div>
+              <div class="sc-row"><span class="muted">Verlust (%)</span><span id="scDeltaPct" class="sc-val neg">–</span></div>
+            </div>
+            <div class="chart-container-sm mt16">
+              <canvas id="scenarioChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
+
   <script src="app.js"></script>
 </body>
 </html>
