@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from datetime import date
 from typing import Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -35,13 +36,13 @@ from .core import (
 )
 from .storage import init_db, insert_earnings_result, list_holdings, list_recent_earnings, upsert_holding
 
-app = FastAPI(title="Personal Wealth Management API", version="0.3.0")
-
-
-@app.on_event("startup")
-def startup_event() -> None:
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     init_db()
+    yield
 
+
+app = FastAPI(title="Personal Wealth Management API", version="0.3.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -212,7 +213,7 @@ def earnings_refresh_holdings() -> dict:
 
 
 @app.get("/api/earnings/recent")
-def earnings_recent(limit: int = 20) -> dict:
+def earnings_recent(limit: int = Query(default=20, ge=1, le=200)) -> dict:
     return {"rows": list_recent_earnings(limit)}
 
 

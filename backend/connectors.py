@@ -318,6 +318,26 @@ def parse_broker_csv(csv_content: str) -> list[dict[str, Any]]:
     return rows
 
 
+def _safe_float(v: Any, default: float = 0.0) -> float:
+    """Convert a value to float, handling German number formats (1.000,50 → 1000.50)."""
+    if v in (None, ""):
+        return default
+    s = str(v).strip()
+    if not s:
+        return default
+    # Detect German format: has both dot (thousands) and comma (decimal)
+    if "," in s and "." in s:
+        # e.g. "1.234,56" → remove dots, replace comma with dot
+        s = s.replace(".", "").replace(",", ".")
+    elif "," in s:
+        # e.g. "1234,56" → replace comma with dot
+        s = s.replace(",", ".")
+    try:
+        return float(s)
+    except ValueError:
+        return default
+
+
 def normalize_broker_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     normalized: list[dict[str, Any]] = []
 
@@ -346,10 +366,10 @@ def normalize_broker_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "date": get_any(r, ["date", "datum"]),
                 "symbol": str(get_any(r, ["symbol", "ticker", "isin"], "")).upper(),
                 "type": tx_type,
-                "quantity": float(get_any(r, ["quantity", "stueck", "shares"], 0) or 0),
-                "price": float(get_any(r, ["price", "kurs"], 0) or 0),
-                "amount": float(get_any(r, ["amount", "betrag"], 0) or 0),
-                "fee": float(get_any(r, ["fee", "gebuehr"], 0) or 0),
+                "quantity": _safe_float(get_any(r, ["quantity", "stueck", "shares"], 0)),
+                "price": _safe_float(get_any(r, ["price", "kurs"], 0)),
+                "amount": _safe_float(get_any(r, ["amount", "betrag"], 0)),
+                "fee": _safe_float(get_any(r, ["fee", "gebuehr"], 0)),
             }
         )
 

@@ -1,18 +1,22 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from backend.app import app
 
 
-client = TestClient(app)
+@pytest.fixture(scope="session")
+def client():
+    with TestClient(app) as c:
+        yield c
 
 
-def test_health():
+def test_health(client):
     r = client.get('/health')
     assert r.status_code == 200
     assert r.json()['ok'] is True
 
 
-def test_portfolio_metrics():
+def test_portfolio_metrics(client):
     payload = {
         'positions': [
             {'symbol': 'AAPL', 'quantity': 10, 'avg_cost': 145, 'price': 188},
@@ -27,7 +31,7 @@ def test_portfolio_metrics():
     assert 'allocation' in data
 
 
-def test_scenario_apply():
+def test_scenario_apply(client):
     payload = {
         'positions': [
             {'symbol': 'AAPL', 'quantity': 10, 'avg_cost': 145, 'price': 188},
@@ -44,7 +48,7 @@ def test_scenario_apply():
     assert 'assumptions' in data
 
 
-def test_tax_de_capital_gains():
+def test_tax_de_capital_gains(client):
     r = client.post('/api/tax/de/capital_gains', json={
         'realized_gains': 2000,
         'freistellungsauftrag_remaining': 1000,
@@ -56,7 +60,7 @@ def test_tax_de_capital_gains():
     assert data['total_tax'] > 0
 
 
-def test_broker_normalize_csv():
+def test_broker_normalize_csv(client):
     csv_data = 'date,symbol,type,quantity,price,amount,fee\n2026-03-20,AAPL,buy,10,188,1880,1\n'
     r = client.post('/api/broker/normalize_csv', json={'csv': csv_data})
     assert r.status_code == 200
@@ -65,7 +69,7 @@ def test_broker_normalize_csv():
     assert rows[0]['symbol'] == 'AAPL'
 
 
-def test_holdings_and_earnings_recent(monkeypatch):
+def test_holdings_and_earnings_recent(client, monkeypatch):
     from backend import app as app_module
 
     monkeypatch.setattr(app_module, 'fetch_report_text', lambda _: 'Revenue 3.2 billion EPS 1.45 guidance updated margin improved')

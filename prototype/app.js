@@ -165,6 +165,7 @@ function parseCsv(text) {
   });
   positions = rows.map(r => ({
     symbol:   String(r.symbol || r.ticker || '').toUpperCase(),
+    name:     String(r.name || r.company || '').trim(),
     quantity: Number(r.quantity || 0),
     avg_cost: Number(r.avg_cost || 0),
     price:    Number(r.price || 0),
@@ -324,7 +325,7 @@ function renderPortfolioTable(allocation) {
     const w   = weights[p.symbol] || 0;
     return `<tr class="clickable" data-sym="${p.symbol}">
       <td><strong>${p.symbol}</strong></td>
-      <td class="muted">${p.symbol}</td>
+      <td class="muted">${p.name || '–'}</td>
       <td>${formatNum(p.quantity, 0)}</td>
       <td class="num">${formatNum(p.avg_cost)}</td>
       <td class="num">${formatNum(p.price)}</td>
@@ -978,12 +979,7 @@ function renderDividendView(metrics) {
   const canvas = document.getElementById('divChart');
   if (canvas) {
     const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
-    /* Add slight variation by position to make it look realistic */
-    const vals = months.map((_, i) => {
-      const base = monthlyForecast;
-      const variation = base * 0.15 * Math.sin(i * 0.8);
-      return Math.max(0, base + variation);
-    });
+    const vals = months.map(() => monthlyForecast);
 
     divChartInst = new Chart(canvas, {
       type: 'bar',
@@ -1047,12 +1043,11 @@ async function refreshEarnings() {
     }
     if (cardsEl) {
       cardsEl.innerHTML = rows.map(r => {
-        const sig = r.signals || {};
         const chips = [
-          sig.revenue ? `<span class="signal-chip signal-ok">Revenue: ${sig.revenue}</span>` : '',
-          sig.eps     ? `<span class="signal-chip signal-ok">EPS: ${sig.eps}</span>` : '',
-          `<span class="signal-chip signal-warn">Guidance: ${sig.guidance}</span>`,
-          `<span class="signal-chip signal-warn">Margins: ${sig.margin}</span>`,
+          r.revenue_signal ? `<span class="signal-chip signal-ok">Revenue: ${r.revenue_signal}</span>` : '',
+          r.eps_signal     ? `<span class="signal-chip signal-ok">EPS: ${r.eps_signal}</span>` : '',
+          `<span class="signal-chip signal-warn">Guidance: ${r.guidance_signal || 'not found'}</span>`,
+          `<span class="signal-chip signal-warn">Margins: ${r.margin_signal || 'not found'}</span>`,
         ].filter(Boolean).join('');
         const dt = r.fetched_at ? new Date(r.fetched_at).toLocaleDateString('de-DE') : '';
         return `<div class="earnings-card">
