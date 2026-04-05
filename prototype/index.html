@@ -56,6 +56,16 @@
           <button id="deBtn" class="lang-btn active">DE</button>
           <button id="enBtn" class="lang-btn">EN</button>
         </div>
+        <div class="theme-toggle-wrap">
+          <span class="theme-toggle-label">
+            <span class="theme-icon" id="themeIcon">🌙</span>
+            <span id="themeLabel">Dark Mode</span>
+          </span>
+          <label class="toggle-switch" title="Dark / Light Mode umschalten">
+            <input type="checkbox" id="darkModeToggle" />
+            <span class="toggle-track"></span>
+          </label>
+        </div>
       </div>
     </aside>
 
@@ -199,8 +209,14 @@
               </div>
             </div>
             <div class="stock-header-right">
-              <div class="stock-price" id="stockPrice">–</div>
+              <div class="stock-price-wrap">
+                <div class="stock-price" id="stockPrice">–</div>
+                <span class="live-badge" id="liveBadge" style="display:none">
+                  <span class="live-dot"></span>LIVE
+                </span>
+              </div>
               <div class="stock-change" id="stockChange">–</div>
+              <div class="price-last-update" id="priceLastUpdate"></div>
             </div>
             <div class="stock-kpi-row">
               <div class="stock-kpi-item"><div class="skpi-label">Market Cap</div><div class="skpi-val" id="hdrMarketCap">–</div></div>

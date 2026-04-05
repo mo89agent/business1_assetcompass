@@ -32,6 +32,7 @@ let portfolioMetrics = null;
 let currentSymbol = null;
 let currentDetail = null;
 let currentRange = '1y';
+let pricePollingTimer = null;
 
 /* ── Chart instances ── */
 let donutChartInst = null;
@@ -41,6 +42,123 @@ let radarChartInst = null;
 let etfSectorChartInst = null;
 let divChartInst = null;
 let scenarioChartInst = null;
+
+/* ════════════════════════════════════════════
+   DARK MODE TOGGLE
+   ════════════════════════════════════════════ */
+
+(function initDarkMode() {
+  const toggle = document.getElementById('darkModeToggle');
+  const icon   = document.getElementById('themeIcon');
+  const label  = document.getElementById('themeLabel');
+  if (!toggle) return;
+
+  // Default: dark mode ON (checked = dark)
+  const saved = localStorage.getItem('acTheme');
+  const isDark = saved !== 'light';   // dark unless explicitly set to light
+  applyTheme(isDark);
+  toggle.checked = isDark;
+
+  toggle.addEventListener('change', () => {
+    applyTheme(toggle.checked);
+    localStorage.setItem('acTheme', toggle.checked ? 'dark' : 'light');
+  });
+
+  function applyTheme(dark) {
+    if (dark) {
+      document.body.classList.remove('light-mode');
+      if (icon)  icon.textContent  = '🌙';
+      if (label) label.textContent = 'Dark Mode';
+    } else {
+      document.body.classList.add('light-mode');
+      if (icon)  icon.textContent  = '☀️';
+      if (label) label.textContent = 'Light Mode';
+    }
+  }
+})();
+
+/* ════════════════════════════════════════════
+   REAL-TIME PRICE POLLING
+   ════════════════════════════════════════════ */
+
+function startPricePolling(symbol) {
+  stopPricePolling();
+  // Show live badge
+  const badge = document.getElementById('liveBadge');
+  if (badge) badge.style.display = '';
+
+  async function pollPrice() {
+    if (!symbol || symbol !== currentSymbol) return;
+    try {
+      const res = await fetch(`${API}/api/market/quote/${symbol}`);
+      if (!res.ok) return;
+      const q = await res.json();
+      const newPrice = q.regularMarketPrice ?? q.lastCloseSeries;
+      if (newPrice == null) return;
+
+      const priceEl = document.getElementById('stockPrice');
+      if (!priceEl) return;
+
+      const oldPrice = currentDetail?.price ?? null;
+      const currency = currentDetail?.currency || '';
+      const newText  = `${currency} ${formatNum(newPrice)}`;
+
+      // Flash green/red on price change
+      if (oldPrice !== null && Math.abs(newPrice - oldPrice) > 0.001) {
+        const cls = newPrice > oldPrice ? 'price-tick-up' : 'price-tick-down';
+        priceEl.classList.remove('price-tick-up', 'price-tick-down', 'price-tick-pulse');
+        priceEl.textContent = newText;
+        void priceEl.offsetWidth; // reflow to restart animation
+        priceEl.classList.add(cls);
+        setTimeout(() => priceEl.classList.remove(cls), 800);
+
+        // Also update change display
+        if (currentDetail) {
+          currentDetail.price = newPrice;
+          const prevClose = currentDetail.prev_close ?? oldPrice;
+          const chgAbs = newPrice - prevClose;
+          const chgPct = prevClose ? (chgAbs / prevClose) * 100 : 0;
+          const chgEl  = document.getElementById('stockChange');
+          if (chgEl) {
+            chgEl.textContent = `${formatNum(chgAbs)}  (${chgPct >= 0 ? '+' : ''}${chgPct.toFixed(2)} %)`;
+            chgEl.className = 'stock-change ' + (chgAbs >= 0 ? 'pos' : 'neg');
+          }
+        }
+      } else {
+        // No change – subtle pulse so user knows it's live
+        priceEl.classList.remove('price-tick-up', 'price-tick-down', 'price-tick-pulse');
+        void priceEl.offsetWidth;
+        priceEl.classList.add('price-tick-pulse');
+        setTimeout(() => priceEl.classList.remove('price-tick-pulse'), 1100);
+        priceEl.textContent = newText;
+      }
+
+      // Update last-refresh timestamp
+      const tsEl = document.getElementById('priceLastUpdate');
+      if (tsEl) {
+        const now = new Date();
+        tsEl.textContent = `Aktualisiert ${now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+      }
+
+      // Flash the market-status dot
+      const dot = document.querySelector('.status-dot');
+      if (dot) {
+        dot.style.transform = 'scale(1.8)';
+        dot.style.opacity = '1';
+        setTimeout(() => { dot.style.transform = ''; dot.style.opacity = ''; }, 400);
+      }
+    } catch (_) { /* backend unavailable – stay silent */ }
+  }
+
+  pollPrice(); // immediate first poll
+  pricePollingTimer = setInterval(pollPrice, 15000); // then every 15 s
+}
+
+function stopPricePolling() {
+  if (pricePollingTimer) { clearInterval(pricePollingTimer); pricePollingTimer = null; }
+  const badge = document.getElementById('liveBadge');
+  if (badge) badge.style.display = 'none';
+}
 
 /* ════════════════════════════════════════════
    FORMATTERS
@@ -111,6 +229,8 @@ function switchView(viewId) {
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + viewId));
   const titleEl = document.getElementById('screenTitle');
   if (titleEl) titleEl.textContent = VIEW_TITLES[viewId] || viewId;
+  if (viewId !== 'analyse') stopPricePolling();
+  else if (currentSymbol) startPricePolling(currentSymbol);
 }
 
 document.querySelectorAll('.nav').forEach(btn => {
@@ -387,6 +507,7 @@ async function loadAnalyse(symbol) {
     renderDescCard(detail);
     renderQualityTab(detail);
     renderFundamentalsTab(detail);
+    startPricePolling(symbol);
 
     /* ETF tab */
     const isEtf = (detail.quote_type || '').toUpperCase().includes('ETF') ||
@@ -753,84 +874,137 @@ function renderQualityTab(d) {
    FUNDAMENTALS TAB
    ════════════════════════════════════════════ */
 
+function _fundValClass(val, greenIf, redIf) {
+  if (val == null) return '';
+  if (greenIf && greenIf(val)) return 'pos';
+  if (redIf  && redIf(val))   return 'neg';
+  return '';
+}
+
 function renderFundamentalsTab(d) {
   const container = document.getElementById('fundamentalsGrid');
   if (!container) return;
 
-  const sections = [
-    {
-      title: 'Bewertung',
-      rows: [
-        ['KGV (trailing)',   d.pe_ratio,        v => formatNum(v, 1) + 'x'],
-        ['KGV (forward)',    d.forward_pe,      v => formatNum(v, 1) + 'x'],
-        ['KBV',              d.price_to_book,   v => formatNum(v, 2) + 'x'],
-        ['KUV',              d.price_to_sales,  v => formatNum(v, 2) + 'x'],
-        ['EV/EBITDA',        d.ev_to_ebitda,   v => formatNum(v, 1) + 'x'],
-        ['Enterprise Value', d.ev,              v => formatLargeNum(v, d.currency)],
-      ],
-    },
-    {
-      title: 'Profitabilität',
-      rows: [
-        ['Nettogewinnmarge', d.profit_margin,    formatPct],
-        ['Bruttomarge',      d.gross_margin,     formatPct],
-        ['Operative Marge',  d.operating_margin, formatPct],
-        ['ROE',              d.roe,              formatPct],
-        ['ROA',              d.roa,              formatPct],
-      ],
-    },
-    {
-      title: 'Wachstum',
-      rows: [
-        ['Umsatzwachstum',   d.revenue_growth,   formatPct],
-        ['Gewinnwachstum',   d.earnings_growth,  formatPct],
-        ['Gesamtumsatz',     d.revenue,          v => formatLargeNum(v, d.currency)],
-        ['Free Cashflow',    d.free_cashflow,    v => formatLargeNum(v, d.currency)],
-      ],
-    },
-    {
-      title: 'Bilanz & Risiko',
-      rows: [
-        ['Verschuldungsgrad', d.debt_to_equity, v => formatNum(v, 1) + ' %'],
-        ['Current Ratio',     d.current_ratio,  v => formatNum(v, 2)],
-        ['Beta',              d.beta,           v => formatNum(v, 2)],
-        ['52W Hoch',          d.week_52_high,   v => formatNum(v, 2)],
-        ['52W Tief',          d.week_52_low,    v => formatNum(v, 2)],
-      ],
-    },
-    {
-      title: 'Aktie & Dividende',
-      rows: [
-        ['EPS (trailing)',   d.eps,              v => formatNum(v, 2)],
-        ['EPS (forward)',    d.forward_eps,      v => formatNum(v, 2)],
-        ['Buchwert/Aktie',  d.book_value,       v => formatNum(v, 2)],
-        ['Dividende',        d.dividend_rate,    v => formatNum(v, 2) + ' ' + (d.currency || '')],
-        ['Div.-Rendite',     d.dividend_yield,   formatPct],
-        ['Ausschüttungsq.', d.payout_ratio,     formatPct],
-      ],
-    },
-    {
-      title: 'Markt',
-      rows: [
-        ['Market Cap',        d.market_cap,          v => formatLargeNum(v, d.currency)],
-        ['Kurs',              d.price,               v => formatNum(v, 2) + ' ' + (d.currency || '')],
-        ['Volumen',           d.volume,              v => formatNum(v, 0)],
-        ['Ø Volumen',         d.avg_volume,          v => formatNum(v, 0)],
-        ['Ausstehende Aktien',d.shares_outstanding,  v => formatLargeNum(v)],
-        ['Land',              d.country,             v => v],
-      ],
-    },
-  ];
+  /* Helper: render a row with optional color class */
+  function row(label, val, fmt, cls) {
+    const display = val != null ? fmt(val) : '–';
+    const colorCls = cls || '';
+    return `<div class="fund-row">
+      <span class="fund-label">${label}</span>
+      <span class="fund-val ${colorCls}">${display}</span>
+    </div>`;
+  }
 
-  container.innerHTML = sections.map(sec => `
-    <div class="fundamentals-section">
-      <div class="fundamentals-section-title">${sec.title}</div>
-      ${sec.rows.map(([label, val, fmt]) => `
-        <div class="fund-row">
-          <span class="fund-label">${label}</span>
-          <span class="fund-val">${val != null ? fmt(val) : '–'}</span>
-        </div>`).join('')}
-    </div>`).join('');
+  /* Section badge rating */
+  function secBadge(type) {
+    const map = { good:'Gut', fair:'Okay', watch:'Prüfen', info:'Info' };
+    return `<span class="fund-section-badge ${type}">${map[type]}</span>`;
+  }
+
+  /* Valuation section */
+  const peScore  = d.pe_ratio  != null && d.pe_ratio  < 30 ? 'good' : d.pe_ratio  != null && d.pe_ratio  < 50 ? 'fair' : 'watch';
+  const evScore  = d.ev_to_ebitda != null && d.ev_to_ebitda < 20 ? 'good' : d.ev_to_ebitda != null ? 'fair' : 'info';
+  const valRating = (peScore === 'good' && evScore === 'good') ? 'good' : (peScore === 'watch' || evScore === 'watch') ? 'watch' : 'fair';
+
+  const valSec = `<div class="fundamentals-section">
+    <div class="fund-section-header">
+      <div class="fundamentals-section-title">Bewertung</div>
+      ${secBadge(valRating)}
+    </div>
+    ${row('KGV (Trailing)',  d.pe_ratio,       v => formatNum(v,1)+'x',  _fundValClass(d.pe_ratio,  v=>v<20, v=>v>50))}
+    ${row('KGV (Forward)',   d.forward_pe,     v => formatNum(v,1)+'x',  _fundValClass(d.forward_pe,v=>v<18, v=>v>45))}
+    ${row('KBV',             d.price_to_book,  v => formatNum(v,2)+'x',  _fundValClass(d.price_to_book, v=>v<3, v=>v>15))}
+    ${row('KUV',             d.price_to_sales, v => formatNum(v,2)+'x',  _fundValClass(d.price_to_sales,v=>v<2, v=>v>15))}
+    ${row('EV/EBITDA',       d.ev_to_ebitda,   v => formatNum(v,1)+'x',  _fundValClass(d.ev_to_ebitda,  v=>v<12, v=>v>30))}
+    ${row('Enterprise Value',d.ev,             v => formatLargeNum(v, d.currency))}
+  </div>`;
+
+  /* Profitability */
+  const marginGood = (d.profit_margin||0) > 0.15 && (d.gross_margin||0) > 0.35;
+  const roeGood    = (d.roe||0) > 0.15;
+  const profRating = marginGood && roeGood ? 'good' : (!marginGood && !roeGood) ? 'watch' : 'fair';
+
+  const profSec = `<div class="fundamentals-section">
+    <div class="fund-section-header">
+      <div class="fundamentals-section-title">Profitabilität</div>
+      ${secBadge(profRating)}
+    </div>
+    ${row('Nettogewinnmarge', d.profit_margin,    v=>formatPct(v), _fundValClass(d.profit_margin,    v=>v>0.15, v=>v<0))}
+    ${row('Bruttomarge',      d.gross_margin,     v=>formatPct(v), _fundValClass(d.gross_margin,     v=>v>0.35, v=>v<0.1))}
+    ${row('Operative Marge',  d.operating_margin, v=>formatPct(v), _fundValClass(d.operating_margin, v=>v>0.15, v=>v<0))}
+    ${row('ROE',              d.roe,              v=>formatPct(v), _fundValClass(d.roe,              v=>v>0.15, v=>v<0))}
+    ${row('ROA',              d.roa,              v=>formatPct(v), _fundValClass(d.roa,              v=>v>0.05, v=>v<0))}
+  </div>`;
+
+  /* Growth */
+  const revGood = (d.revenue_growth||0) > 0.05;
+  const epsGood = (d.earnings_growth||0) > 0;
+  const growRating = revGood && epsGood ? 'good' : (!revGood && !epsGood) ? 'watch' : 'fair';
+
+  const growSec = `<div class="fundamentals-section">
+    <div class="fund-section-header">
+      <div class="fundamentals-section-title">Wachstum</div>
+      ${secBadge(growRating)}
+    </div>
+    ${row('Umsatzwachstum (YoY)', d.revenue_growth,  v=>formatPct(v), _fundValClass(d.revenue_growth,  v=>v>0.05, v=>v<0))}
+    ${row('Gewinnwachstum (YoY)', d.earnings_growth, v=>formatPct(v), _fundValClass(d.earnings_growth, v=>v>0,    v=>v<-0.1))}
+    ${row('Gesamtumsatz',          d.revenue,         v=>formatLargeNum(v, d.currency))}
+    ${row('Free Cashflow',         d.free_cashflow,   v=>formatLargeNum(v, d.currency), _fundValClass(d.free_cashflow, v=>v>0, v=>v<0))}
+  </div>`;
+
+  /* Balance sheet & risk */
+  const debtOk    = d.debt_to_equity == null || d.debt_to_equity < 100;
+  const currentOk = d.current_ratio == null  || d.current_ratio  > 1;
+  const balRating = debtOk && currentOk ? 'good' : (!debtOk || !currentOk) ? 'watch' : 'fair';
+
+  const w52pos = (d.week_52_high && d.week_52_low && d.price)
+    ? Math.round((d.price - d.week_52_low) / (d.week_52_high - d.week_52_low) * 100) : null;
+
+  const balSec = `<div class="fundamentals-section">
+    <div class="fund-section-header">
+      <div class="fundamentals-section-title">Bilanz &amp; Risiko</div>
+      ${secBadge(balRating)}
+    </div>
+    ${row('Verschuldungsgrad', d.debt_to_equity,  v=>formatNum(v,1)+' %', _fundValClass(d.debt_to_equity,  v=>v<50,  v=>v>150))}
+    ${row('Current Ratio',     d.current_ratio,   v=>formatNum(v,2),      _fundValClass(d.current_ratio,   v=>v>1.5, v=>v<1))}
+    ${row('Beta',              d.beta,            v=>formatNum(v,2),      _fundValClass(d.beta,            v=>v<1,   v=>v>1.8))}
+    ${row('52W Hoch',          d.week_52_high,    v=>formatNum(v,2))}
+    ${row('52W Tief',          d.week_52_low,     v=>formatNum(v,2))}
+    ${w52pos != null ? row('Position in 52W-Spanne', w52pos, v=>v+'%', _fundValClass(w52pos, v=>v>60, v=>v<20)) : ''}
+  </div>`;
+
+  /* Share & dividend */
+  const divYld = (d.dividend_yield||0)*100;
+  const divRating = divYld > 3 ? 'good' : divYld > 0.5 ? 'fair' : 'info';
+
+  const divSec = `<div class="fundamentals-section">
+    <div class="fund-section-header">
+      <div class="fundamentals-section-title">Aktie &amp; Dividende</div>
+      ${secBadge(divRating)}
+    </div>
+    ${row('EPS (Trailing)',    d.eps,           v=>formatNum(v,2)+' '+(d.currency||''), _fundValClass(d.eps, v=>v>0, v=>v<0))}
+    ${row('EPS (Forward)',     d.forward_eps,   v=>formatNum(v,2)+' '+(d.currency||''), _fundValClass(d.forward_eps, v=>v>0, v=>v<0))}
+    ${row('Buchwert/Aktie',   d.book_value,    v=>formatNum(v,2)+' '+(d.currency||''))}
+    ${row('Dividende p.a.',   d.dividend_rate, v=>formatNum(v,2)+' '+(d.currency||''))}
+    ${row('Div.-Rendite',     d.dividend_yield,v=>formatPct(v), _fundValClass(d.dividend_yield, v=>v*100>2, null))}
+    ${row('Ausschüttungsquote',d.payout_ratio, v=>formatPct(v), _fundValClass(d.payout_ratio, v=>v<0.6, v=>v>0.9))}
+  </div>`;
+
+  /* Market info */
+  const mktSec = `<div class="fundamentals-section">
+    <div class="fund-section-header">
+      <div class="fundamentals-section-title">Marktdaten</div>
+      ${secBadge('info')}
+    </div>
+    ${row('Market Cap',          d.market_cap,         v=>formatLargeNum(v, d.currency))}
+    ${row('Kurs',                d.price,              v=>formatNum(v,2)+' '+(d.currency||''))}
+    ${row('Volumen',             d.volume,             v=>formatNum(v,0))}
+    ${row('Ø Volumen (90T)',     d.avg_volume,         v=>formatNum(v,0))}
+    ${row('Ausstehende Aktien',  d.shares_outstanding, v=>formatLargeNum(v))}
+    ${row('Land',                d.country,            v=>v)}
+  </div>`;
+
+  container.innerHTML = valSec + profSec + growSec + balSec + divSec + mktSec;
 }
 
 /* ════════════════════════════════════════════
