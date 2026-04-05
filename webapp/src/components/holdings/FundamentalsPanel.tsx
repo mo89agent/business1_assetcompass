@@ -9,7 +9,7 @@ import {
 } from "recharts";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-interface Fundamentals {
+export interface Fundamentals {
   symbol: string; quoteType: string | null; shortName: string | null;
   exchange: string | null; currency: string | null;
   price: number | null; change: number | null; changePct: number | null;
@@ -18,6 +18,7 @@ interface Fundamentals {
   priceToBook: number | null; priceToSales: number | null;
   eps: number | null; epsForward: number | null;
   beta: number | null; sharesOutstanding: number | null;
+  evToEbitda: number | null;
   dividendYield: number | null; dividendRate: number | null;
   exDividendDate: string | null; payoutRatio: number | null;
   week52High: number | null; week52Low: number | null;
@@ -236,22 +237,30 @@ function PriceTargetChart({
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────────
-interface Props { symbol: string; assetClass?: string; }
+interface Props {
+  symbol: string;
+  assetClass?: string;
+  /** If true, hides the top price strip (use when parent already renders a header) */
+  compact?: boolean;
+  /** Pre-loaded data — skips the API fetch when provided */
+  initialData?: Fundamentals;
+}
 
-export function FundamentalsPanel({ symbol, assetClass }: Props) {
-  const [data, setData] = useState<Fundamentals | null>(null);
-  const [loading, setLoading] = useState(true);
+export function FundamentalsPanel({ symbol, assetClass, compact, initialData }: Props) {
+  const [data, setData] = useState<Fundamentals | null>(initialData ?? null);
+  const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
+    if (initialData) { setData(initialData); setLoading(false); return; }
     if (!symbol) return;
     setLoading(true); setError(false);
     fetch(`/api/yahoo/fundamentals?symbol=${encodeURIComponent(symbol)}`)
       .then((r) => r.json())
       .then((d) => { if (d.error) setError(true); else setData(d as Fundamentals); setLoading(false); })
       .catch(() => { setError(true); setLoading(false); });
-  }, [symbol]);
+  }, [symbol, initialData]);
 
   if (loading) return (
     <div className="bg-white rounded-xl border border-slate-200 p-8 flex items-center justify-center gap-2 text-slate-400">
@@ -278,8 +287,8 @@ export function FundamentalsPanel({ symbol, assetClass }: Props) {
   return (
     <div className="space-y-4">
 
-      {/* ── Live price strip ─────────────────────────────────── */}
-      {data.price != null && (
+      {/* ── Live price strip (hidden in compact mode — parent shows header) ── */}
+      {!compact && data.price != null && (
         <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-6 flex-wrap">
           <div>
             <p className="text-2xl font-bold text-slate-900">
@@ -383,6 +392,7 @@ export function FundamentalsPanel({ symbol, assetClass }: Props) {
             <Row label="KGV (forward)" value={fmt(data.forwardPE, 1, "x")} />
             <Row label="Kurs-Buch-Verhältnis" value={fmt(data.priceToBook, 2, "x")} />
             <Row label="Kurs-Umsatz-Verhältnis" value={fmt(data.priceToSales, 2, "x")} />
+            <Row label="EV/EBITDA" value={fmt(data.evToEbitda, 1, "x")} />
             <Row label="EPS (TTM)" value={data.eps != null ? `${fmt(data.eps, 2)} ${curr}` : "—"} />
             <Row label="EPS (forward)" value={data.epsForward != null ? `${fmt(data.epsForward, 2)} ${curr}` : "—"} />
           </Section>

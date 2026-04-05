@@ -102,6 +102,7 @@ export async function GET(request: NextRequest) {
       epsForward:    q.epsForward ?? null,
       beta:          keyStats?.beta ?? null,
       sharesOutstanding: keyStats?.sharesOutstanding ?? null,
+      evToEbitda:    (keyStats?.enterpriseToEbitda as number | null) ?? null,
 
       // Dividend
       dividendYield:  q.dividendYield ?? q.trailingAnnualDividendYield ?? null,
