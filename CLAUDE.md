@@ -1,106 +1,111 @@
 # AssetCompass – Projekt-Kontext für Claude Code Sitzungen
 
-## Projektübersicht
+## ⚠️ WICHTIG: Die primäre App ist die Next.js Webapp
 
-**AssetCompass** ist ein persönliches Wealth-Management-System (Single-Page-App) für Portfolio-Tracking, Aktienanalyse, ETF-Explorer, Dividendenprognose, Earnings-Reports und Szenario-Stresstests.
+Die **echte, vollständige App** befindet sich unter `webapp/`. Das ist die Version mit:
+- **Hellem Hintergrund** (`#f8fafc`)
+- **Port 3000** (`npm run dev` aus `webapp/`)
+- Next.js 16, React 19, Prisma, Tailwind CSS v4, Radix UI
 
-**Technologie:**
-- Backend: Python FastAPI (Port 9000) + SQLite
-- Frontend: Vanilla JavaScript + Chart.js (Port 8888)
-- Kein Node.js, kein React, kein Build-Prozess
+Die `prototype/` ist die ältere Vanilla-JS-Demo (dunkles Design, Port 8888) — sie wird **nicht mehr weiterentwickelt**.
 
-## Session-Geschichte (chronologisch)
+---
 
-| Session | Inhalt | Commits |
-|---------|--------|---------|
-| Build wealth managem... (+31560) | Basis-App: FastAPI Backend, Portfolio-Metriken, XIRR/TWR, DE-Steuer, Scenario, Earnings, Broker-CSV | `fa5916a`–`4d303b8` |
-| Stock Analysis Plat... (+30234) | Vollständiger UI-Ausbau: Kurs & Analyse, ETF Explorer, Dividenden-Chart, Radar-Chart, Yahoo Finance Integration, Mock-Datenlayer | `415ba2d` |
-| Fix fundamental data di... (+444) | Datendarstellungs-Fixes | zwischen den großen Commits |
-| Complete bug and functi... (+50) | Bug-Audit & 6 Fixes (Earnings-Signale, CSV-Parsing, Dividenden-Chart, Portfolio-Name, FastAPI lifespan, limit-Validierung) | `7e0e058` |
+## Stack (webapp/)
 
-## Architektur
+- **Framework:** Next.js 16 App Router + Turbopack
+- **DB:** Prisma 7 + SQLite (via `better-sqlite3`)
+- **Styling:** Tailwind CSS v4
+- **Marktdaten:** yahoo-finance2 → interne Routes `/api/yahoo/`
+- **Auth:** Session-basiert (eigenes System, kein NextAuth)
+- **Charts:** Recharts
+- **UI:** Radix UI + Lucide Icons
 
-```
-business1_assetcompass/
-├── backend/
-│   ├── app.py          # FastAPI Routen, lifespan, Pydantic-Modelle
-│   ├── core.py         # Berechnungs-Engine (XIRR, TWR, Attribution, Steuer, Szenario)
-│   ├── connectors.py   # Yahoo Finance API, Earnings-Scraping, CSV-Parser
-│   ├── storage.py      # SQLite (holdings, earnings_reports Tabellen)
-│   ├── mock_data.py    # Fallback-Daten wenn Yahoo nicht erreichbar
-│   └── tests/
-│       └── test_api.py # Pytest Test-Suite (6 Tests, alle grün)
-├── prototype/
-│   ├── index.html      # HTML-Struktur (7 Views)
-│   ├── app.js          # Gesamte Frontend-Logik (~1200 Zeilen, Vanilla JS)
-│   └── styles.css      # Dark-Theme CSS
-├── testdata/
-│   └── sample_portfolio.csv   # Test-Portfolio-Datei
-├── start.sh            # Startet Backend (9000) + Frontend (8888) automatisch
-└── UI_PREVIEW_STANDALONE.html  # Standalone-Demo (kein Backend nötig)
-```
-
-## API-Endpunkte
-
-| Endpoint | Methode | Beschreibung |
-|----------|---------|--------------|
-| `/health` | GET | Server-Status |
-| `/api/portfolio/metrics` | POST | Portfolio-KPIs (Marktwert, PnL, Allokation, Dividende) |
-| `/api/portfolio/xirr` | POST | Geldgewichtete Rendite (Newton-Raphson) |
-| `/api/portfolio/twr` | POST | Zeitgewichtete Rendite |
-| `/api/portfolio/attribution` | POST | Markt- vs. Cashflow-Effekt |
-| `/api/scenario/apply` | POST | Stresstest (Aktien-/Zinsschock) |
-| `/api/tax/de/capital_gains` | POST | Deutsche Abgeltungsteuer + Soli + KiSt |
-| `/api/holdings/upsert` | POST | Holding speichern (Symbol, Menge, Earnings-URL) |
-| `/api/holdings` | GET | Alle Holdings auflisten |
-| `/api/earnings/analyze` | POST | Earnings-Bericht analysieren (URL → Regex-Extraktion) |
-| `/api/earnings/refresh_holdings` | POST | Alle Holdings mit Earnings-URL aktualisieren |
-| `/api/earnings/recent` | GET | Letzte Earnings-Analysen (max 200) |
-| `/api/market/quote/{symbol}` | GET | Aktueller Kurs (Yahoo Finance) |
-| `/api/market/detail/{symbol}` | GET | 30+ Kennzahlen (PE, Margen, Wachstum, Analysten…) |
-| `/api/market/etf/{symbol}` | GET | ETF-Daten (Sektorgewichtung, Top-Holdings) |
-| `/api/market/history/{symbol}` | GET | OHLCV-Kursverlauf (1M–Max) |
-| `/api/broker/parse_csv` | POST | Broker-CSV parsen |
-| `/api/broker/normalize_csv` | POST | Broker-CSV normalisieren (DE/EN Spaltennamen) |
-
-## Frontend-Views (7 Stück)
-
-1. **Dashboard** – KPI-Karten, Allokations-Donut, Top/Flop-Liste, CSV-Upload
-2. **Kurs & Analyse** – Kurschart (1M–5J), 52W-Range, Radar-Chart, Qualitäts-Check, Fundamentaldaten
-3. **Portfolio** – Positions-Tabelle mit P/L, Gewicht, Analyse-Button
-4. **ETF Explorer** – Filter nach Assetklasse/Region/Stil, 16 vordefinierte ETFs
-5. **Dividenden** – Monats-Balkendiagramm, Yield-on-Cost Tabelle
-6. **Earnings** – Inbox mit Revenue/EPS/Guidance/Margin-Signalen
-7. **Szenarien** – Schieberegler für Aktien-/Zinsschock, Vorher/Nachher-Vergleich
-
-## CSV-Format für Portfolio-Upload
-
-```csv
-symbol,name,quantity,avg_cost,price,annual_dividend_per_share
-AAPL,Apple Inc.,10,145.00,213.49,0.96
-MSFT,Microsoft,5,312.00,415.32,3.00
-```
-
-## Tests ausführen
+## Befehle
 
 ```bash
-python -m pytest backend/tests/test_api.py -v
-# Erwartung: 6/6 PASSED
+cd webapp
+npm install          # Einmalig
+npm run dev          # Dev-Server → http://localhost:3000
+npx tsc --noEmit     # TypeScript prüfen
+npx prisma generate  # nach Schema-Änderungen
+npx prisma db push   # DB-Schema übernehmen
 ```
 
-## Bekannte Einschränkungen (MVP)
+## Architektur-Regeln (aus webapp/CLAUDE.md)
 
-- Dividenden-Chart: Gleichmäßige Jahresprognose (kein monatsgenaues Modell)
-- Earnings-Analyse: Regex-basiert, kein KI-Parsing
-- German Tax: Keine Verlustverrechnung über Jahre, kein §4h EStG
-- Szenario: Zinssensitivität pauschal 0.5%/+1% Zinsanstieg, kein Sektor-Differenzierung
-- Kein Persistenz im Frontend (CSV erneut laden nach Seiten-Refresh)
-- CORS: `allow_origins=["*"]` – nur für lokale Entwicklung geeignet
+- **G/V:** `gain = qty × livePrice − bookValue` (nie `currentPrice` aus DB)
+- **Live-Preise:** `useLivePrices` Hook → 30s Refresh
+- **FX:** `{ EUR:1.0, USD:0.92, GBP:1.17, CHF:1.06 }` (hardcoded)
+- **XIRR:** `src/lib/xirr.ts` → Newton-Raphson, 6 Startpunkte → `number | null`
+- Kein Prisma in Client Components
+- Kein `require()` auf externe CJS-Packages (Turbopack)
+
+## Datei-Struktur (webapp/)
+
+```
+webapp/
+├── src/
+│   ├── app/(auth)/           # Login, Register
+│   ├── app/(dashboard)/      # Alle geschützten Seiten
+│   │   └── dashboard/
+│   │       ├── page.tsx           # Haupt-Dashboard
+│   │       ├── holdings/          # Portfolio-Übersicht + Detail
+│   │       ├── market/[symbol]/   # Aktien-/ETF-Analyse
+│   │       ├── real-estate/       # Immobilien-Modul
+│   │       ├── dividends/         # Dividenden-Prognose
+│   │       ├── crypto/            # Krypto-Portfolio
+│   │       ├── scenarios/         # Stress-Tests
+│   │       ├── transactions/      # Transaktions-Ledger
+│   │       ├── import/            # CSV + PDF Import
+│   │       ├── cash-debt/         # Cash & Schulden
+│   │       └── alerts/            # Preisalarme
+│   ├── app/api/yahoo/        # Yahoo Finance Routes
+│   ├── app/actions/          # Server Actions
+│   ├── components/           # 55 React-Komponenten nach Feature
+│   ├── hooks/                # useLivePrices etc.
+│   ├── lib/data/             # Prisma-Datenschicht (server-only)
+│   ├── lib/xirr.ts           # XIRR-Engine
+│   ├── lib/signals.ts        # 13 Kauf/Verkauf-Indikatoren
+│   └── lib/types.ts          # Typen
+└── prisma/
+    ├── schema.prisma         # DB-Schema
+    └── seed.ts               # Demo-Daten
+```
+
+## Features (vollständig implementiert)
+
+| Feature | Status |
+|---------|--------|
+| Dashboard (Net Worth, XIRR, Allokation, Performance-Chart) | ✅ |
+| Holdings / Portfolio-Tabelle | ✅ |
+| Aktien-/ETF-Detail (Kurschart, Fundamentals, Benchmark) | ✅ |
+| Buy/Sell/Hold Signal-Engine (13 Indikatoren) | ✅ |
+| Dividenden-Prognose + Historie | ✅ |
+| Immobilien-Modul (Cashflow, Kredit, Bewertung) | ✅ |
+| Krypto-Panel | ✅ |
+| Szenario-Stress-Test | ✅ |
+| Transaktions-Ledger | ✅ |
+| CSV + Trade Republic PDF Import | ✅ |
+| Cash & Schulden | ✅ |
+| Preisalarme | ✅ |
+| Einstellungen | ✅ |
+| Live-Preise (30s Refresh) | ✅ |
+| XIRR (geldgewichtete Rendite) | ✅ |
+| Steuer-Lots | ✅ |
+| Onboarding | ✅ |
+
+## Session-Geschichte
+
+| Session | Inhalt |
+|---------|--------|
+| Build wealth managem... (+31560) | V1 Next.js App + alle Basis-Module + Prisma/SQLite |
+| + weitere Iterationen | XIRR, PDF-Import, Crypto, Real Estate, Signale, Live-Preise, Fixes |
 
 ## Wichtig für neue Sitzungen
 
-- **Immer auf dem aktuellen Stand von `main` aufbauen** – `git pull origin main` vor Arbeitsbeginn
-- **Branch-Konvention**: `claude/<beschreibung>` für neue Feature-Branches
-- **Tests nach jeder Änderung**: `python -m pytest backend/tests/test_api.py -v`
-- **Mock-Daten**: Wenn Yahoo Finance nicht erreichbar → automatischer Fallback auf `backend/mock_data.py`
-- Die App läuft mit `./start.sh` (Backend + Frontend in einem Schritt)
+1. **Immer in `webapp/` arbeiten** – das ist die echte App
+2. **`prototype/` ignorieren** – wird nicht mehr weiterentwickelt
+3. **`npm run dev` aus `webapp/`** → Port 3000
+4. TypeScript prüfen: `npx tsc --noEmit`
+5. Nach Schema-Änderungen: `npx prisma generate && npx prisma db push`
