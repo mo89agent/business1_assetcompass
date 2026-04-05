@@ -4,6 +4,8 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { FundamentalsPanel } from "@/components/holdings/FundamentalsPanel";
 import { AssetPriceChart } from "@/components/holdings/AssetPriceChart";
+import { SignalsPanel } from "@/components/holdings/SignalsPanel";
+import { MarketEtfPanel } from "@/components/market/MarketEtfPanel";
 import { AddAssetDrawer } from "@/components/holdings/AddAssetDrawer";
 import { Plus, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -12,7 +14,14 @@ interface Props {
   symbol: string;
 }
 
-type Tab = "chart" | "fundamentals";
+type Tab = "fundamentals" | "chart" | "signals" | "etf";
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: "fundamentals", label: "Fundamentals" },
+  { id: "chart",        label: "Kurschart" },
+  { id: "signals",      label: "Signale & Qualität" },
+  { id: "etf",          label: "ETF-Details" },
+];
 
 export function MarketDetailShell({ symbol }: Props) {
   const [tab, setTab] = useState<Tab>("fundamentals");
@@ -44,16 +53,13 @@ export function MarketDetailShell({ symbol }: Props) {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 border-b border-slate-200">
-          {([
-            { id: "fundamentals" as Tab, label: "Fundamentals & Daten" },
-            { id: "chart" as Tab,        label: "Kurschart" },
-          ]).map(({ id, label }) => (
+        <div className="flex gap-1 border-b border-slate-200 overflow-x-auto">
+          {TABS.map(({ id, label }) => (
             <button
               key={id}
               onClick={() => setTab(id)}
               className={cn(
-                "px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px",
+                "px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px whitespace-nowrap",
                 tab === id
                   ? "border-blue-600 text-blue-600"
                   : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
@@ -76,6 +82,14 @@ export function MarketDetailShell({ symbol }: Props) {
             name={symbol}
             avgCostBasis={0}
           />
+        )}
+
+        {tab === "signals" && (
+          <SignalsPanel ticker={symbol} name={symbol} />
+        )}
+
+        {tab === "etf" && (
+          <MarketEtfPanel symbol={symbol} />
         )}
       </div>
 

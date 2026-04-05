@@ -1,7 +1,3 @@
-__pycache__/
-*.pyc
-.venv/
-
 # Next.js
 webapp/node_modules/
 webapp/.next/
