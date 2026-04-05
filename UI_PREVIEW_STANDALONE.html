@@ -1,63 +1,2314 @@
 <!doctype html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Personal Wealth Management – Standalone Preview</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AssetCompass – Wealth Intelligence (Preview)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    :root{--bg:#0b1220;--panel:#121a2b;--muted:#8fa0bf;--text:#e9eef9;--accent:#3b82f6;--ok:#22c55e;--border:#24314b}
-    *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui;background:var(--bg);color:var(--text)}
-    .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
-    .sidebar{padding:16px;border-right:1px solid var(--border);background:#0f172a}
-    .nav{display:block;width:100%;background:transparent;color:var(--text);padding:10px;border:1px solid transparent;border-radius:10px;margin-bottom:8px;cursor:pointer;text-align:left}
-    .nav.active,.nav:hover{background:var(--panel);border-color:var(--border)}
-    .content{padding:20px}.top{display:flex;justify-content:space-between;align-items:center}.cta{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px}
-    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px}
-    .muted{color:var(--muted);font-size:13px}.big{font-size:24px}.pos{color:var(--ok)}
-    .grid{display:grid;grid-template-columns:2fr 1fr;gap:10px}.placeholder{height:140px;border:1px dashed var(--border);border-radius:10px;display:grid;place-items:center;color:var(--muted)}
-    .view{display:none}.view.active{display:block}
-    @media(max-width:1000px){.app{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}
+/* ════════════════════════════════════════════
+   AssetCompass – Design System
+   Modern dark financial dashboard
+   ════════════════════════════════════════════ */
+
+:root {
+  --bg:           #080d19;
+  --surface:      #0d1526;
+  --surface-2:    #111d32;
+  --surface-3:    #192845;
+  --border:       rgba(255,255,255,0.07);
+  --border-hover: rgba(255,255,255,0.14);
+  --text:         #e4eaf5;
+  --text-muted:   #6b7fa3;
+  --text-dim:     #3d5175;
+
+  --accent:       #3b82f6;
+  --accent-2:     #60a5fa;
+  --accent-glow:  rgba(59,130,246,0.18);
+
+  --green:        #10b981;
+  --green-dim:    rgba(16,185,129,0.14);
+  --green-text:   #34d399;
+
+  --red:          #ef4444;
+  --red-dim:      rgba(239,68,68,0.14);
+  --red-text:     #f87171;
+
+  --yellow:       #f59e0b;
+  --yellow-dim:   rgba(245,158,11,0.14);
+
+  --purple:       #8b5cf6;
+  --cyan:         #06b6d4;
+  --orange:       #f97316;
+
+  --radius-sm:    8px;
+  --radius:       14px;
+  --radius-lg:    20px;
+
+  --shadow:       0 4px 24px rgba(0,0,0,0.4);
+  --shadow-sm:    0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+input, button, select, textarea { font-family: inherit; }
+
+/* ════════════════════════════════════════════
+   LAYOUT
+   ════════════════════════════════════════════ */
+
+.app {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 20;
+  transition: transform 0.25s ease;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+  padding: 4px 0;
+}
+.logo-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px; color: white;
+  flex-shrink: 0;
+}
+.logo-name { font-weight: 700; font-size: 15px; line-height: 1.2; }
+.logo-sub  { font-size: 11px; color: var(--text-muted); }
+
+.sidebar-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 4px 4px 6px;
+  margin-top: 4px;
+}
+
+.sidebar-nav { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+.nav:hover { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+.nav.active {
+  background: linear-gradient(135deg, var(--accent-glow), transparent);
+  border-color: rgba(59,130,246,0.35);
+  color: var(--accent-2);
+}
+.nav-icon { font-size: 15px; opacity: 0.8; width: 18px; text-align: center; }
+
+.sidebar-bottom { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); }
+.lang-switch { display: flex; gap: 6px; }
+.lang-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+.lang-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+/* ── Main Content ── */
+.content { padding: 0; overflow-x: hidden; }
+
+/* ── Topbar ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(8,13,25,0.8);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 10;
+}
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.screen-title { font-size: 17px; font-weight: 600; }
+
+.sidebar-toggle {
+  display: none;
+  background: none; border: none; color: var(--text);
+  font-size: 18px; cursor: pointer; padding: 4px;
+}
+
+/* Mini search in topbar */
+.search-mini { position: relative; }
+.search-mini input {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 7px 14px;
+  font-size: 13px;
+  width: 180px;
+  outline: none;
+  transition: border 0.15s;
+}
+.search-mini input:focus { border-color: var(--accent); }
+.search-dropdown {
+  position: absolute; top: 100%; left: 0; right: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-top: 4px;
+  z-index: 100;
+  display: none;
+}
+.search-dropdown.visible { display: block; }
+.search-item {
+  padding: 8px 12px; cursor: pointer; font-size: 13px;
+  display: flex; justify-content: space-between;
+}
+.search-item:hover { background: var(--surface-3); }
+
+.market-status { display: flex; align-items: center; gap: 6px; }
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse 2s infinite;
+}
+.status-text { font-size: 12px; color: var(--text-muted); }
+@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.5 } }
+
+/* ── Views ── */
+.view { display: none; padding: 24px; }
+.view.active { display: block; }
+
+/* ════════════════════════════════════════════
+   COMPONENTS
+   ════════════════════════════════════════════ */
+
+/* ── Card ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+.card:hover { border-color: var(--border-hover); }
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.card-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: none; border-radius: var(--radius-sm);
+  cursor: pointer; font-weight: 600; font-size: 13px;
+  padding: 9px 16px; transition: all 0.15s;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: #2563eb; }
+.btn-ghost {
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { background: var(--surface-3); }
+.w100 { width: 100%; justify-content: center; }
+
+/* ── KPI Grid ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  position: relative;
+  overflow: hidden;
+}
+.kpi-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--purple));
+}
+.kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px; }
+.kpi-value { font-size: 26px; font-weight: 700; line-height: 1.1; margin-bottom: 4px; }
+.kpi-sub { font-size: 12px; color: var(--text-muted); }
+
+/* ── Dashboard grid ── */
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 14px;
+}
+
+/* ── Upload card ── */
+.upload-hint { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+.upload-hint code { background: var(--surface-3); padding: 2px 5px; border-radius: 4px; font-size: 11px; }
+.upload-zone {
+  border: 1px dashed var(--border-hover);
+  border-radius: var(--radius-sm);
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  position: relative;
+  margin-bottom: 12px;
+}
+.upload-zone:hover { border-color: var(--accent); background: var(--accent-glow); }
+.upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.upload-icon { font-size: 22px; margin-bottom: 6px; color: var(--text-muted); }
+.upload-text { font-size: 12px; color: var(--text-muted); }
+.upload-actions { display: flex; align-items: center; gap: 12px; }
+.upload-status { font-size: 12px; color: var(--text-muted); }
+
+/* ── Donut chart ── */
+.donut-wrap { position: relative; display: flex; justify-content: center; margin-bottom: 12px; }
+.donut-center {
+  position: absolute; inset: 0; display: flex;
+  flex-direction: column; align-items: center; justify-content: center;
+}
+.donut-center-val { font-size: 26px; font-weight: 700; }
+.donut-center-lbl { font-size: 11px; color: var(--text-muted); }
+.legend-list { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+.legend-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; cursor: pointer;
+}
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.legend-name { flex: 1; color: var(--text-muted); }
+.legend-pct { font-weight: 600; }
+
+/* ── Mini table ── */
+.mini-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 4px; }
+.mt8 { margin-top: 8px; }
+.mini-table { width: 100%; border-collapse: collapse; }
+.mini-table td { padding: 5px 4px; font-size: 12px; }
+.mini-table td:last-child { text-align: right; }
+
+/* ── Analyse view ── */
+.analyse-search {
+  margin-bottom: 20px;
+}
+.analyse-search-input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 12px 16px;
+  font-size: 15px;
+  outline: none;
+  margin-bottom: 10px;
+  transition: border-color 0.15s;
+}
+.analyse-search-input:focus { border-color: var(--accent); }
+.analyse-search { display: flex; flex-direction: column; gap: 0; }
+.analyse-search-row { display: flex; gap: 10px; margin-bottom: 10px; }
+.analyse-search-input { flex: 1; }
+
+.quick-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.chip {
+  padding: 5px 12px; border-radius: 20px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text-muted); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.chip:hover { background: var(--accent-glow); border-color: var(--accent); color: var(--accent-2); }
+
+/* Empty state */
+.analyse-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 360px; gap: 12px; text-align: center;
+}
+.empty-icon { font-size: 48px; opacity: 0.2; }
+.empty-title { font-size: 18px; font-weight: 600; }
+.empty-sub { font-size: 14px; color: var(--text-muted); max-width: 400px; line-height: 1.6; }
+
+/* Stock header */
+.stock-header {
+  margin-bottom: 14px;
+}
+.stock-header-left { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.stock-header-right { display: flex; gap: 16px; align-items: baseline; margin-bottom: 12px; }
+.stock-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  background: var(--accent-glow); border: 1px solid rgba(59,130,246,0.4);
+  color: var(--accent-2); border-radius: 5px; padding: 3px 7px; white-space: nowrap;
+}
+.stock-name { font-size: 20px; font-weight: 700; }
+.stock-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.stock-price { font-size: 32px; font-weight: 700; }
+.stock-change { font-size: 16px; font-weight: 600; }
+.stock-kpi-row {
+  display: flex; flex-wrap: wrap; gap: 6px 0;
+  border-top: 1px solid var(--border); padding-top: 12px;
+}
+.stock-kpi-item {
+  padding: 6px 16px; border-right: 1px solid var(--border);
+  min-width: 100px;
+}
+.stock-kpi-item:first-child { padding-left: 0; }
+.stock-kpi-item:last-child { border-right: none; }
+.skpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin-bottom: 3px; }
+.skpi-val { font-size: 14px; font-weight: 600; }
+
+/* Tab bar */
+.tab-bar {
+  display: flex; gap: 4px; border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.tab-btn {
+  padding: 10px 16px; background: none; border: none;
+  color: var(--text-muted); font-size: 13px; font-weight: 600;
+  cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all 0.15s; margin-bottom: -1px;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent-2); border-bottom-color: var(--accent); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.hidden { display: none !important; }
+
+/* Chart section */
+.chart-section { margin-bottom: 14px; }
+.chart-section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.range-btns { display: flex; gap: 4px; }
+.range-btn {
+  padding: 5px 10px; border-radius: 6px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text-muted); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.range-btn:hover { background: var(--surface-3); color: var(--text); }
+.range-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+.chart-perf-badge {
+  font-size: 13px; font-weight: 700; margin-bottom: 6px;
+}
+.chart-container { position: relative; height: 280px; }
+.chart-container-sm { position: relative; height: 200px; }
+.chart-volume-container { position: relative; height: 60px; margin-top: 4px; }
+
+/* 52W range bar */
+.range-card { margin-bottom: 14px; }
+.range-bar-wrap {
+  display: flex; align-items: center; gap: 12px; padding: 12px 0;
+}
+.range-low, .range-high { font-size: 13px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+.range-bar-track {
+  flex: 1; height: 6px; background: var(--surface-3); border-radius: 3px;
+  position: relative;
+}
+.range-bar-fill {
+  position: absolute; left: 0; top: 0; height: 100%;
+  background: linear-gradient(90deg, var(--red), var(--yellow), var(--green));
+  border-radius: 3px;
+}
+.range-bar-marker {
+  position: absolute; top: 50%; width: 12px; height: 12px;
+  border-radius: 50%; background: white;
+  box-shadow: 0 0 6px rgba(0,0,0,0.5);
+  transform: translate(-50%,-50%);
+}
+.range-bar-price-label { font-size: 12px; color: var(--text-muted); text-align: center; }
+
+/* Analyst card */
+.analyst-card { margin-bottom: 14px; }
+.analyst-grid { display: flex; gap: 24px; margin-top: 12px; align-items: center; }
+.analyst-consensus {
+  font-size: 22px; font-weight: 700; text-transform: uppercase;
+  padding: 10px 20px; border-radius: var(--radius-sm);
+  background: var(--green-dim); color: var(--green-text);
+  border: 1px solid rgba(52,211,153,0.2);
+  white-space: nowrap;
+}
+.analyst-consensus.hold { background: var(--yellow-dim); color: var(--yellow); border-color: rgba(245,158,11,0.3); }
+.analyst-consensus.sell { background: var(--red-dim); color: var(--red-text); border-color: rgba(239,68,68,0.3); }
+.analyst-stats { display: flex; flex-direction: column; gap: 5px; font-size: 13px; }
+.analyst-stats .muted { color: var(--text-muted); margin-right: 8px; }
+
+/* Description */
+.desc-text { font-size: 13px; color: var(--text-muted); line-height: 1.7; margin-top: 10px; }
+
+/* Quality tab */
+.quality-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+}
+.radar-container { position: relative; height: 260px; margin: 8px 0; }
+.radar-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.radar-legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; }
+.radar-legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+.quality-score-badge {
+  font-size: 28px; font-weight: 700;
+  color: var(--green-text); margin-bottom: 16px;
+}
+.quality-section { margin-bottom: 14px; }
+.quality-section-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--text-muted);
+  margin-bottom: 8px; padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.quality-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 5px 0; font-size: 13px;
+}
+.quality-row-left { display: flex; align-items: center; gap: 8px; }
+.quality-check { font-size: 14px; }
+.quality-check.ok  { color: var(--green); }
+.quality-check.bad { color: var(--red); }
+.quality-check.neutral { color: var(--yellow); }
+.quality-val { font-size: 12px; color: var(--text-muted); }
+.quality-bar-track { width: 60px; height: 4px; background: var(--surface-3); border-radius: 2px; }
+.quality-bar-fill { height: 100%; border-radius: 2px; }
+
+/* ETF detail tab */
+.etf-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.etf-meta-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px;
+  margin-top: 10px;
+}
+.etf-meta-item .etf-meta-label { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
+.etf-meta-item .etf-meta-val { font-size: 14px; font-weight: 600; }
+.full-width { grid-column: 1 / -1; }
+
+/* Holdings weight bar */
+.weight-bar-track { width: 100%; height: 4px; background: var(--surface-3); border-radius: 2px; }
+.weight-bar-fill { height: 100%; border-radius: 2px; background: var(--accent); }
+
+/* Fundamentals tab */
+.fundamentals-grid {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 14px;
+}
+.fundamentals-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.fundamentals-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 12px; }
+.fund-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; border-bottom: 1px solid var(--border); }
+.fund-row:last-child { border-bottom: none; }
+.fund-label { color: var(--text-muted); }
+.fund-val { font-weight: 600; }
+
+/* ── Portfolio view ── */
+.port-grid { display: grid; gap: 14px; }
+.search-box {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  padding: 7px 12px; font-size: 13px; outline: none; width: 200px;
+}
+.search-box:focus { border-color: var(--accent); }
+
+/* ── Data table ── */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  padding: 8px 12px; font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-muted); border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.data-table th.num { text-align: right; }
+.data-table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--border); }
+.data-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tbody tr { cursor: default; transition: background 0.1s; }
+.data-table tbody tr:hover { background: var(--surface-2); }
+.data-table tbody tr.clickable { cursor: pointer; }
+
+.muted-cell { color: var(--text-muted); text-align: center; padding: 20px; }
+.num { text-align: right; }
+
+/* Color helpers */
+.pos { color: var(--green-text); }
+.neg { color: var(--red-text); }
+.muted { color: var(--text-muted); }
+
+/* ── ETF Explorer ── */
+.etf-explorer-layout { display: grid; grid-template-columns: 220px 1fr; gap: 16px; }
+.etf-filters { display: flex; flex-direction: column; gap: 12px; align-self: start; position: sticky; top: 80px; }
+.filter-group { border-top: 1px solid var(--border); padding-top: 10px; }
+.filter-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 7px; }
+.filter-check { display: flex; align-items: center; gap: 7px; font-size: 13px; padding: 3px 0; cursor: pointer; color: var(--text-muted); }
+.filter-check:hover { color: var(--text); }
+.filter-check input { accent-color: var(--accent); }
+
+.etf-list-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
+.etf-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 12px; }
+
+.etf-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+  cursor: pointer; transition: all 0.2s;
+}
+.etf-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.etf-card-symbol { font-size: 11px; font-weight: 700; color: var(--accent-2); letter-spacing: 0.05em; margin-bottom: 4px; }
+.etf-card-name { font-size: 13px; font-weight: 600; margin-bottom: 10px; line-height: 1.35; }
+.etf-card-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+.etf-meta-kpi { }
+.etf-meta-kpi-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.etf-meta-kpi-val { font-size: 13px; font-weight: 600; }
+
+/* ── Dividends ── */
+.div-grid { display: grid; gap: 14px; }
+
+/* ── Earnings ── */
+.earnings-card {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px; margin-bottom: 10px;
+}
+.earnings-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.earnings-symbol { font-weight: 700; font-size: 14px; }
+.earnings-date { font-size: 11px; color: var(--text-muted); }
+.earnings-signals { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.signal-chip {
+  font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px;
+}
+.signal-ok  { background: var(--green-dim); color: var(--green-text); }
+.signal-warn { background: var(--yellow-dim); color: var(--yellow); }
+
+/* ── Scenario ── */
+.scenario-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.slider-group { margin-bottom: 16px; }
+.slider-label { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; color: var(--text-muted); }
+.slider-val { font-weight: 700; color: var(--text); }
+.slider {
+  width: 100%; accent-color: var(--accent);
+  cursor: pointer; height: 4px;
+}
+.scenario-result { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.sc-row { display: flex; justify-content: space-between; padding: 7px 0; font-size: 14px; border-bottom: 1px solid var(--border); }
+.sc-val { font-weight: 700; }
+.sc-divider { height: 1px; background: var(--border); margin: 4px 0; }
+.mt16 { margin-top: 16px; }
+
+/* ── Loading skeleton ── */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 4px;
+}
+@keyframes shimmer { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════ */
+
+@media (max-width: 1280px) {
+  .kpi-grid { grid-template-columns: repeat(2,1fr); }
+  .dash-grid { grid-template-columns: 1fr 1fr; }
+  .fundamentals-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 960px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: 240px;
+    transform: translateX(-100%); z-index: 100;
+    box-shadow: var(--shadow);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-toggle { display: flex; }
+  .content { padding: 0; }
+  .dash-grid { grid-template-columns: 1fr; }
+  .quality-grid { grid-template-columns: 1fr; }
+  .scenario-grid { grid-template-columns: 1fr; }
+  .etf-explorer-layout { grid-template-columns: 1fr; }
+  .etf-detail-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .fundamentals-grid { grid-template-columns: 1fr; }
+  .stock-kpi-row { gap: 0; }
+  .stock-kpi-item { min-width: 50%; border-right: none; padding: 6px 8px; }
+  .topbar { padding: 10px 16px; }
+  .view { padding: 16px; }
+  .search-mini input { width: 130px; }
+}
+  /* demo-mode banner */
+  .demo-banner{background:linear-gradient(90deg,#1e3a5f,#1e3a5f);border-bottom:1px solid rgba(59,130,246,0.4);padding:8px 24px;font-size:12px;color:#93c5fd;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;}
+  .demo-dot{width:7px;height:7px;border-radius:50%;background:#f59e0b;animation:pulse 2s infinite;}
   </style>
 </head>
 <body>
-<div class="app">
-  <aside class="sidebar">
-    <h2>Personal Wealth Management</h2>
-    <button class="nav active" data-view="dashboard">Dashboard</button>
-    <button class="nav" data-view="stocks">Aktien & ETFs</button>
-    <button class="nav" data-view="asset">Asset Detail</button>
-    <button class="nav" data-view="scenario">Szenarien</button>
-  </aside>
-  <main class="content">
-    <div class="top"><h1 id="title">Dashboard</h1><button class="cta">Asset hinzufügen</button></div>
+  <!-- Demo mode banner -->
+  <div class="demo-banner">
+    <span class="demo-dot"></span>
+    <strong>DEMO-MODUS</strong> — Vorschau mit Beispieldaten. Für Live-Daten: Backend starten (<code>uvicorn backend.app:app --port 9000</code>) und <a href="prototype/" style="color:#60a5fa">prototype/ öffnen</a>.
+  </div>
 
-    <section id="dashboard" class="view active">
-      <div class="kpis">
-        <div class="card"><div class="muted">Gesamtvermögen</div><div class="big">€ 1.248.000</div></div>
-        <div class="card"><div class="muted">Tagesveränderung</div><div class="big pos">+1.2%</div></div>
-        <div class="card"><div class="muted">Monats-Cashflow</div><div class="big">€ 3.450</div></div>
-        <div class="card"><div class="muted">Dividenden (12M)</div><div class="big">€ 14.200</div></div>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">AC</div>
+        <div><div class="logo-name">AssetCompass</div><div class="logo-sub">Wealth Intelligence</div></div>
       </div>
-      <div class="grid">
-        <div class="card"><div class="muted">Net-Worth Verlauf</div><div class="placeholder">Line Chart</div></div>
-        <div class="card"><div class="muted">Asset Allocation</div><div class="placeholder">Donut Chart</div></div>
+      <div class="sidebar-section-label">Analyse</div>
+      <nav class="sidebar-nav">
+        <button class="nav active" data-view="dashboard"><span class="nav-icon">◈</span><span>Dashboard</span></button>
+        <button class="nav" data-view="analyse"><span class="nav-icon">⬡</span><span>Kurs &amp; Analyse</span></button>
+        <button class="nav" data-view="portfolio"><span class="nav-icon">◧</span><span>Portfolio</span></button>
+        <button class="nav" data-view="etf"><span class="nav-icon">◉</span><span>ETF Explorer</span></button>
+      </nav>
+      <div class="sidebar-section-label">Tools</div>
+      <nav class="sidebar-nav">
+        <button class="nav" data-view="dividends"><span class="nav-icon">✦</span><span>Dividenden</span></button>
+        <button class="nav" data-view="earnings"><span class="nav-icon">◎</span><span>Earnings</span></button>
+        <button class="nav" data-view="scenario"><span class="nav-icon">◲</span><span>Szenarien</span></button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="lang-switch">
+          <button id="deBtn" class="lang-btn active">DE</button>
+          <button id="enBtn" class="lang-btn">EN</button>
+        </div>
       </div>
-    </section>
+    </aside>
 
-    <section id="stocks" class="view"><div class="card"><h3>Aktien & ETFs Overview</h3><p class="muted">Tabelle, Filter, Performance, Dividendenrendite</p></div></section>
-    <section id="asset" class="view"><div class="card"><h3>Asset Detail</h3><p class="muted">Preis-Chart, Fundamentals, Earnings Summary</p></div></section>
-    <section id="scenario" class="view"><div class="card"><h3>Szenario-Tool</h3><p class="muted">Marktcrash/Zinsen/FX mit Delta-Ergebnis</p></div></section>
-  </main>
-</div>
+    <main class="content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+          <h2 class="screen-title" id="screenTitle">Dashboard</h2>
+        </div>
+        <div class="topbar-right">
+          <div class="search-mini">
+            <input type="text" id="globalSearch" placeholder="Symbol suchen…" autocomplete="off"/>
+          </div>
+          <div class="market-status">
+            <span class="status-dot"></span><span class="status-text">Demo</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- DASHBOARD -->
+      <section id="view-dashboard" class="view active">
+        <div class="kpi-grid">
+          <div class="kpi-card"><div class="kpi-label">Gesamtvermögen</div><div class="kpi-value">€ 124.850</div><div class="kpi-sub">Kostenbasis: € 98.200</div></div>
+          <div class="kpi-card"><div class="kpi-label">Unrealisierter P/L</div><div class="kpi-value pos">€ 26.650</div><div class="kpi-sub pos">+27,1 %</div></div>
+          <div class="kpi-card"><div class="kpi-label">Monatl. Dividende</div><div class="kpi-value">€ 312</div><div class="kpi-sub">Prognose</div></div>
+          <div class="kpi-card"><div class="kpi-label">Dividende (12M)</div><div class="kpi-value">€ 3.744</div><div class="kpi-sub">Jahresprognose</div></div>
+        </div>
+        <div class="dash-grid">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Portfolio laden</span></div>
+            <p class="upload-hint">Format: <code>symbol, quantity, avg_cost, price, annual_dividend_per_share</code></p>
+            <div class="upload-zone" id="uploadZone">
+              <div class="upload-icon">⬆</div>
+              <div class="upload-text">CSV hierher ziehen oder klicken</div>
+              <input type="file" id="portfolioFile" accept=".csv"/>
+            </div>
+            <div class="upload-actions">
+              <button id="loadPortfolioBtn" class="btn btn-primary">Portfolio laden</button>
+              <span class="upload-status" id="loadStatus">Demo-Daten aktiv.</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Allokation</span></div>
+            <div class="donut-wrap">
+              <canvas id="donutChart" width="200" height="200"></canvas>
+              <div class="donut-center" id="donutCenter">
+                <div class="donut-center-val">6</div>
+                <div class="donut-center-lbl">Positionen</div>
+              </div>
+            </div>
+            <ul class="legend-list" id="allocationLegend"></ul>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Top &amp; Flop</span></div>
+            <div class="mini-section-label">Beste</div>
+            <table class="mini-table"><tbody id="topAssetsBody"></tbody></table>
+            <div class="mini-section-label mt8">Schwächste</div>
+            <table class="mini-table"><tbody id="flopAssetsBody"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ANALYSE -->
+      <section id="view-analyse" class="view">
+        <div class="analyse-search">
+          <div style="display:flex;gap:10px;margin-bottom:10px">
+            <input type="text" id="analyseSearch" class="analyse-search-input" style="margin-bottom:0" placeholder="Symbol: AAPL, MSFT, NVDA, IVV …" autocomplete="off"/>
+            <button class="btn btn-primary" id="analyseSearchBtn" style="white-space:nowrap">Analysieren</button>
+          </div>
+          <div class="quick-chips">
+            <button class="chip" data-sym="AAPL">AAPL</button>
+            <button class="chip" data-sym="MSFT">MSFT</button>
+            <button class="chip" data-sym="NVDA">NVDA</button>
+            <button class="chip" data-sym="ORCL">ORCL</button>
+            <button class="chip" data-sym="IVV">IVV (S&amp;P500)</button>
+            <button class="chip" data-sym="QQQ">QQQ</button>
+          </div>
+        </div>
+        <div class="analyse-result" id="analyseResult">
+          <div class="stock-header card">
+            <div class="stock-header-left">
+              <div class="stock-badge" id="stockBadgeType">AKTIE</div>
+              <div><div class="stock-name" id="stockName">Apple Inc.</div><div class="stock-meta" id="stockMeta">Technology · Consumer Electronics · NASDAQ</div></div>
+            </div>
+            <div class="stock-header-right">
+              <div class="stock-price" id="stockPrice">USD 213,49</div>
+              <div class="stock-change pos" id="stockChange">+2,31 (+1,09 %)</div>
+            </div>
+            <div class="stock-kpi-row">
+              <div class="stock-kpi-item"><div class="skpi-label">Market Cap</div><div class="skpi-val" id="hdrMarketCap">$ 3,22 Bio.</div></div>
+              <div class="stock-kpi-item"><div class="skpi-label">KGV (trailing)</div><div class="skpi-val" id="hdrPE">33,40x</div></div>
+              <div class="stock-kpi-item"><div class="skpi-label">KGV (forward)</div><div class="skpi-val" id="hdrFwdPE">29,10x</div></div>
+              <div class="stock-kpi-item"><div class="skpi-label">KBV</div><div class="skpi-val" id="hdrPB">47,20x</div></div>
+              <div class="stock-kpi-item"><div class="skpi-label">KUV</div><div class="skpi-val" id="hdrPS">8,50x</div></div>
+              <div class="stock-kpi-item"><div class="skpi-label">EV/EBITDA</div><div class="skpi-val" id="hdrEvEbitda">24,80x</div></div>
+              <div class="stock-kpi-item"><div class="skpi-label">Div. Rendite</div><div class="skpi-val" id="hdrDivYield">0,46 %</div></div>
+              <div class="stock-kpi-item"><div class="skpi-label">Beta</div><div class="skpi-val" id="hdrBeta">1,24</div></div>
+              <div class="stock-kpi-item"><div class="skpi-label">52W Hoch</div><div class="skpi-val" id="hdrW52H">237,23</div></div>
+              <div class="stock-kpi-item"><div class="skpi-label">52W Tief</div><div class="skpi-val" id="hdrW52L">164,08</div></div>
+            </div>
+          </div>
+          <div class="tab-bar">
+            <button class="tab-btn active" data-tab="overview">Übersicht</button>
+            <button class="tab-btn" data-tab="quality">Qualitäts-Check</button>
+            <button class="tab-btn" data-tab="financials">Fundamentaldaten</button>
+          </div>
+          <!-- Übersicht Tab -->
+          <div class="tab-content active" id="tab-overview">
+            <div class="chart-section card">
+              <div class="chart-section-header">
+                <span class="card-title" id="chartSymbolLabel">AAPL – Kursverlauf</span>
+                <div class="range-btns">
+                  <button class="range-btn" data-range="1mo">1M</button>
+                  <button class="range-btn" data-range="3mo">3M</button>
+                  <button class="range-btn" data-range="6mo">6M</button>
+                  <button class="range-btn active" data-range="1y">1J</button>
+                  <button class="range-btn" data-range="2y">2J</button>
+                  <button class="range-btn" data-range="5y">5J</button>
+                </div>
+              </div>
+              <div class="chart-perf-badge pos" id="chartPerfBadge">+18,4 %</div>
+              <div class="chart-container"><canvas id="priceChart"></canvas></div>
+              <div class="chart-volume-container"><canvas id="volumeChart"></canvas></div>
+            </div>
+            <div class="card range-card">
+              <div class="card-title">52-Wochen-Spanne</div>
+              <div class="range-bar-wrap">
+                <span class="range-low" id="rangeBarLow">164,08</span>
+                <div class="range-bar-track">
+                  <div class="range-bar-fill" id="rangeBarFill" style="width:67%"></div>
+                  <div class="range-bar-marker" id="rangeBarMarker" style="left:67%"></div>
+                </div>
+                <span class="range-high" id="rangeBarHigh">237,23</span>
+              </div>
+              <div class="range-bar-price-label" id="rangeBarPriceLabel">Aktuell: 213,49 (67 % über 52W-Tief)</div>
+            </div>
+            <div class="card analyst-card">
+              <div class="card-title">Analysten-Konsens</div>
+              <div class="analyst-grid">
+                <div class="analyst-consensus" id="analystConsensus">Kaufen</div>
+                <div class="analyst-stats">
+                  <div><span class="muted">Kursziel Ø</span> <span id="analystTarget">232,50 USD</span></div>
+                  <div><span class="muted">Tief</span> <span id="analystLow">180,00</span></div>
+                  <div><span class="muted">Hoch</span> <span id="analystHigh">275,00</span></div>
+                  <div><span class="muted">Analysten</span> <span id="analystCount">42 Analysten</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="card" id="descCard">
+              <div class="card-title">Unternehmensbeschreibung</div>
+              <p class="desc-text" id="descText">Apple Inc. entwirft, produziert und vermarktet Smartphones, PCs, Tablets, Wearables und Zubehör sowie Software und Dienstleistungen weltweit. Das Unternehmen bietet iPhone, Mac, iPad, Apple Watch und AirPods sowie Services wie App Store, Apple Music, Apple TV+, iCloud und Apple Pay an.</p>
+            </div>
+          </div>
+          <!-- Qualität Tab -->
+          <div class="tab-content hidden" id="tab-quality">
+            <div class="quality-grid">
+              <div class="card">
+                <div class="card-title">Qualitätsprofil</div>
+                <div class="radar-container"><canvas id="radarChart"></canvas></div>
+              </div>
+              <div class="card">
+                <div class="card-title">Qualitäts-Check</div>
+                <div class="quality-score-badge" id="qualityScoreBadge" style="color:var(--green-text)">8/10</div>
+                <div class="quality-section">
+                  <div class="quality-section-title">Wachstum &amp; Stabilität</div>
+                  <div id="qGrowth"></div>
+                </div>
+                <div class="quality-section">
+                  <div class="quality-section-title">Profitabilität</div>
+                  <div id="qProfit"></div>
+                </div>
+                <div class="quality-section">
+                  <div class="quality-section-title">Sicherheit &amp; Bilanz</div>
+                  <div id="qSafety"></div>
+                </div>
+                <div class="quality-section">
+                  <div class="quality-section-title">Bewertung</div>
+                  <div id="qValue"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Fundamentals Tab -->
+          <div class="tab-content hidden" id="tab-financials">
+            <div class="fundamentals-grid" id="fundamentalsGrid"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PORTFOLIO -->
+      <section id="view-portfolio" class="view">
+        <div class="port-grid">
+          <div class="card full-width">
+            <div class="card-header">
+              <span class="card-title">Positionen</span>
+              <input type="text" id="searchInput" class="search-box" placeholder="Symbol filtern…"/>
+            </div>
+            <table class="data-table">
+              <thead><tr><th>Ticker</th><th>Name</th><th>Menge</th><th class="num">Einstand</th><th class="num">Kurs</th><th class="num">Marktwert</th><th class="num">P/L</th><th class="num">P/L %</th><th class="num">Gewicht</th><th></th></tr></thead>
+              <tbody id="stocksTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ETF EXPLORER -->
+      <section id="view-etf" class="view">
+        <div class="etf-explorer-layout">
+          <div class="etf-filters card">
+            <div class="card-title">Filter</div>
+            <div class="filter-group">
+              <div class="filter-label">Assetklasse</div>
+              <label class="filter-check"><input type="checkbox" name="asset" value="equity" checked/> Aktien</label>
+              <label class="filter-check"><input type="checkbox" name="asset" value="bond"/> Anleihen</label>
+              <label class="filter-check"><input type="checkbox" name="asset" value="commodity"/> Rohstoffe</label>
+              <label class="filter-check"><input type="checkbox" name="asset" value="mixed"/> Gemischt</label>
+            </div>
+            <div class="filter-group">
+              <div class="filter-label">Region</div>
+              <label class="filter-check"><input type="checkbox" name="region" value="world" checked/> Global</label>
+              <label class="filter-check"><input type="checkbox" name="region" value="usa" checked/> USA</label>
+              <label class="filter-check"><input type="checkbox" name="region" value="europe"/> Europa</label>
+              <label class="filter-check"><input type="checkbox" name="region" value="em"/> Emerging Markets</label>
+            </div>
+            <div class="filter-group">
+              <div class="filter-label">Stil</div>
+              <label class="filter-check"><input type="checkbox" name="style" value="broad" checked/> Breit</label>
+              <label class="filter-check"><input type="checkbox" name="style" value="tech"/> Technologie</label>
+              <label class="filter-check"><input type="checkbox" name="style" value="dividend"/> Dividenden</label>
+              <label class="filter-check"><input type="checkbox" name="style" value="growth"/> Growth</label>
+            </div>
+            <button class="btn btn-primary w100" id="etfFilterBtn">Anwenden</button>
+          </div>
+          <div class="etf-grid-area">
+            <div class="etf-list-header"><span class="muted">Beliebte ETFs</span><span class="muted" id="etfCount"></span></div>
+            <div class="etf-cards-grid" id="etfCardsGrid"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIVIDENDEN -->
+      <section id="view-dividends" class="view">
+        <div class="div-grid">
+          <div class="card full-width">
+            <div class="card-title">Monatliche Dividendenprognose</div>
+            <div class="chart-container"><canvas id="divChart"></canvas></div>
+          </div>
+          <div class="card full-width">
+            <div class="card-title">Dividenden je Position</div>
+            <table class="data-table">
+              <thead><tr><th>Symbol</th><th class="num">Div. p.a.</th><th class="num">Div./Monat</th><th class="num">Yield auf EK</th></tr></thead>
+              <tbody id="dividendTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- EARNINGS -->
+      <section id="view-earnings" class="view">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Earnings Inbox</span>
+            <button id="refreshEarningsBtn" class="btn btn-primary">Holdings aktualisieren</button>
+          </div>
+          <div id="earningsCards"><p class="muted-cell">Im Demo-Modus nicht verfügbar. Backend starten für Live-Daten.</p></div>
+        </div>
+      </section>
+
+      <!-- SZENARIEN -->
+      <section id="view-scenario" class="view">
+        <div class="scenario-grid">
+          <div class="card">
+            <div class="card-title">Szenario konfigurieren</div>
+            <div class="slider-group">
+              <label class="slider-label"><span>Aktienschock</span><span class="slider-val" id="equityShockVal">-20 %</span></label>
+              <input id="equityShock" type="range" min="0" max="60" value="20" class="slider"/>
+            </div>
+            <div class="slider-group">
+              <label class="slider-label"><span>Zinsschock</span><span class="slider-val" id="rateShockVal">+1.5 %</span></label>
+              <input id="rateShock" type="range" min="0" max="6" step="0.25" value="1.5" class="slider"/>
+            </div>
+            <div class="slider-group">
+              <label class="slider-label"><span>Dividendenkürzung</span><span class="slider-val" id="divCutVal">-10 %</span></label>
+              <input id="divCut" type="range" min="0" max="60" value="10" class="slider"/>
+            </div>
+            <button id="applyScenarioBtn" class="btn btn-primary w100">Szenario anwenden</button>
+          </div>
+          <div class="card">
+            <div class="card-title">Ergebnis</div>
+            <div class="scenario-result">
+              <div class="sc-row"><span class="muted">Portfolio vorher</span><span id="scBefore" class="sc-val">€ 124.850</span></div>
+              <div class="sc-row"><span class="muted">Portfolio nachher</span><span id="scAfter" class="sc-val">–</span></div>
+              <div class="sc-divider"></div>
+              <div class="sc-row"><span class="muted">Verlust (€)</span><span id="scDelta" class="sc-val neg">–</span></div>
+              <div class="sc-row"><span class="muted">Verlust (%)</span><span id="scDeltaPct" class="sc-val neg">–</span></div>
+            </div>
+            <div class="chart-container-sm mt16"><canvas id="scenarioChart"></canvas></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
 <script>
-  const tabs = document.querySelectorAll('.nav');
-  const views = document.querySelectorAll('.view');
-  const title = document.getElementById('title');
-  tabs.forEach(btn=>btn.addEventListener('click',()=>{
-    tabs.forEach(t=>t.classList.remove('active'));btn.classList.add('active');
-    views.forEach(v=>v.classList.toggle('active', v.id===btn.dataset.view));
-    title.textContent = btn.textContent;
+/* ============ DEMO DATA ============ */
+const DEMO_MODE = true;
+const DEMO_POSITIONS = [{'symbol': 'AAPL', 'quantity': 50, 'avg_cost': 150, 'price': 213.49, 'div': 0.96}, {'symbol': 'MSFT', 'quantity': 30, 'avg_cost': 280, 'price': 415.32, 'div': 3.0}, {'symbol': 'NVDA', 'quantity': 20, 'avg_cost': 220, 'price': 875.4, 'div': 0.16}, {'symbol': 'IVV', 'quantity': 40, 'avg_cost': 380, 'price': 524.12, 'div': 5.8}, {'symbol': 'SCHD', 'quantity': 60, 'avg_cost': 70, 'price': 78.9, 'div': 2.72}, {'symbol': 'ORCL', 'quantity': 25, 'avg_cost': 90, 'price': 126.94, 'div': 1.6}];
+
+const DEMO_DETAIL = {
+  symbol:'AAPL', name:'Apple Inc.', quote_type:'EQUITY',
+  currency:'USD', exchange:'NASDAQ', sector:'Technology',
+  industry:'Consumer Electronics', country:'United States',
+  description:'Apple Inc. entwirft, produziert und vermarktet Smartphones, PCs, Tablets, Wearables und Zubehör weltweit. Zu den Produkten gehören iPhone, Mac, iPad, Apple Watch und AirPods sowie Services wie App Store, Apple Music, iCloud und Apple Pay.',
+  price:213.49, change:2.31, change_pct:0.0109, prev_close:211.18,
+  market_cap:3.22e12, volume:58e6, avg_volume:62e6,
+  pe_ratio:33.4, forward_pe:29.1, price_to_book:47.2, price_to_sales:8.5, ev_to_ebitda:24.8,
+  eps:6.39, forward_eps:7.34, book_value:4.52,
+  dividend_yield:0.0046, dividend_rate:0.96, payout_ratio:0.15,
+  beta:1.24, week_52_high:237.23, week_52_low:164.08,
+  profit_margin:0.262, operating_margin:0.315, gross_margin:0.455,
+  roe:1.47, roa:0.22, revenue:383e9, revenue_growth:0.051, earnings_growth:0.11,
+  debt_to_equity:151, current_ratio:1.04, free_cashflow:111e9,
+  target_price:232.5, target_low:180, target_high:275, recommendation:'buy', analyst_count:42,
+  shares_outstanding:15.3e9,
+};
+
+/* ============ INJECTED APP CODE ============ */
+/* ════════════════════════════════════════════
+   AssetCompass – Main Application
+   Vanilla JS, Chart.js 4.x
+   ════════════════════════════════════════════ */
+
+const API = 'http://localhost:9000';
+const CHART_COLORS = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#f97316','#ec4899','#14b8a6','#a855f7'];
+
+const POPULAR_ETFS = [
+  { symbol:'IVV',  name:'iShares Core S&P 500',           category:'US Aktien',        region:'usa',   style:'broad',    asset:'equity' },
+  { symbol:'VTI',  name:'Vanguard Total Stock Market',     category:'US Aktien',        region:'usa',   style:'broad',    asset:'equity' },
+  { symbol:'QQQ',  name:'Invesco QQQ (Nasdaq-100)',        category:'Tech / Wachstum',  region:'usa',   style:'tech',     asset:'equity' },
+  { symbol:'VEA',  name:'Vanguard FTSE Developed Markets', category:'Intl. Aktien',     region:'world', style:'broad',    asset:'equity' },
+  { symbol:'VWO',  name:'Vanguard Emerging Markets',       category:'Emerging Markets', region:'em',    style:'broad',    asset:'equity' },
+  { symbol:'EFA',  name:'iShares MSCI EAFE',               category:'Intl. Aktien',     region:'world', style:'broad',    asset:'equity' },
+  { symbol:'BND',  name:'Vanguard Total Bond Market',      category:'Anleihen',         region:'usa',   style:'broad',    asset:'bond'   },
+  { symbol:'AGG',  name:'iShares Core US Aggregate Bond',  category:'Anleihen',         region:'usa',   style:'broad',    asset:'bond'   },
+  { symbol:'GLD',  name:'SPDR Gold Shares',                category:'Rohstoffe',        region:'world', style:'broad',    asset:'commodity'},
+  { symbol:'VIG',  name:'Vanguard Dividend Appreciation',  category:'Dividenden',       region:'usa',   style:'dividend', asset:'equity' },
+  { symbol:'SCHD', name:'Schwab US Dividend Equity',       category:'Dividenden',       region:'usa',   style:'dividend', asset:'equity' },
+  { symbol:'VGT',  name:'Vanguard Information Technology', category:'Technologie',      region:'usa',   style:'tech',     asset:'equity' },
+  { symbol:'IEFA', name:'iShares Core MSCI EAFE',          category:'Intl. Aktien',     region:'europe',style:'broad',    asset:'equity' },
+  { symbol:'VNQ',  name:'Vanguard Real Estate ETF',        category:'Immobilien',       region:'usa',   style:'broad',    asset:'mixed'  },
+  { symbol:'SPY',  name:'SPDR S&P 500 ETF Trust',          category:'US Aktien',        region:'usa',   style:'broad',    asset:'equity' },
+  { symbol:'JEPI', name:'JPMorgan Equity Premium Income',  category:'Dividenden',       region:'usa',   style:'dividend', asset:'equity' },
+];
+
+/* ── State ── */
+let positions = [];
+let annualDividendMap = {};
+let portfolioMetrics = null;
+let currentSymbol = null;
+let currentDetail = null;
+let currentRange = '1y';
+
+/* ── Chart instances ── */
+let donutChartInst = null;
+let priceChartInst = null;
+let volumeChartInst = null;
+let radarChartInst = null;
+let etfSectorChartInst = null;
+let divChartInst = null;
+let scenarioChartInst = null;
+
+/* ════════════════════════════════════════════
+   FORMATTERS
+   ════════════════════════════════════════════ */
+
+function formatEur(v, currency) {
+  if (v == null) return '–';
+  const sym = currency === 'USD' ? '$' : (currency || '€');
+  return sym + ' ' + Number(v).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatNum(v, d = 2) {
+  if (v == null) return '–';
+  return Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+
+function formatPct(v) {
+  if (v == null) return '–';
+  const n = Number(v) * 100;
+  return (n >= 0 ? '+' : '') + n.toFixed(2) + ' %';
+}
+
+function formatPctRaw(v) {
+  if (v == null) return '–';
+  const n = Number(v);
+  return (n >= 0 ? '+' : '') + n.toFixed(2) + ' %';
+}
+
+function formatLargeNum(v, currency) {
+  if (v == null) return '–';
+  const sym = currency === 'USD' ? '$' : (currency || '€');
+  const n = Number(v);
+  if (n >= 1e12) return sym + ' ' + (n / 1e12).toLocaleString('de-DE', {maximumFractionDigits:2}) + ' Bio.';
+  if (n >= 1e9)  return sym + ' ' + (n / 1e9).toLocaleString('de-DE', {maximumFractionDigits:2}) + ' Mrd.';
+  if (n >= 1e6)  return sym + ' ' + (n / 1e6).toLocaleString('de-DE', {maximumFractionDigits:1}) + ' Mio.';
+  return sym + ' ' + n.toLocaleString('de-DE');
+}
+
+function formatDate(ts, range) {
+  const d = new Date(ts * 1000);
+  if (range === '1mo' || range === '3mo') {
+    return d.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' });
+  }
+  return d.toLocaleDateString('de-DE', { month:'short', year:'2-digit' });
+}
+
+function pctColor(v) {
+  if (v == null) return '';
+  return Number(v) >= 0 ? 'pos' : 'neg';
+}
+
+/* ════════════════════════════════════════════
+   ROUTING / NAVIGATION
+   ════════════════════════════════════════════ */
+
+const VIEW_TITLES = {
+  dashboard: 'Dashboard',
+  analyse:   'Kurs & Analyse',
+  portfolio: 'Portfolio',
+  etf:       'ETF Explorer',
+  dividends: 'Dividenden',
+  earnings:  'Earnings',
+  scenario:  'Szenarien',
+};
+
+function switchView(viewId) {
+  document.querySelectorAll('.nav').forEach(b => b.classList.toggle('active', b.dataset.view === viewId));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + viewId));
+  const titleEl = document.getElementById('screenTitle');
+  if (titleEl) titleEl.textContent = VIEW_TITLES[viewId] || viewId;
+}
+
+document.querySelectorAll('.nav').forEach(btn => {
+  btn.addEventListener('click', () => switchView(btn.dataset.view));
+});
+
+/* Sidebar mobile toggle */
+const sidebarEl = document.getElementById('sidebar');
+const sidebarToggleBtn = document.getElementById('sidebarToggle');
+if (sidebarToggleBtn) {
+  sidebarToggleBtn.addEventListener('click', () => sidebarEl?.classList.toggle('open'));
+}
+document.addEventListener('click', e => {
+  if (sidebarEl?.classList.contains('open') && !sidebarEl.contains(e.target) && e.target !== sidebarToggleBtn) {
+    sidebarEl.classList.remove('open');
+  }
+});
+
+/* Global topbar search */
+const globalSearchInput = document.getElementById('globalSearch');
+if (globalSearchInput) {
+  globalSearchInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const sym = globalSearchInput.value.trim().toUpperCase();
+      if (sym) { loadAnalyse(sym); switchView('analyse'); globalSearchInput.value = ''; }
+    }
+  });
+}
+
+/* Lang buttons (cosmetic) */
+document.getElementById('deBtn')?.addEventListener('click', () => {
+  document.getElementById('deBtn').classList.add('active');
+  document.getElementById('enBtn').classList.remove('active');
+});
+document.getElementById('enBtn')?.addEventListener('click', () => {
+  document.getElementById('enBtn').classList.add('active');
+  document.getElementById('deBtn').classList.remove('active');
+});
+
+/* ════════════════════════════════════════════
+   DASHBOARD – Portfolio upload & metrics
+   ════════════════════════════════════════════ */
+
+function parseCsv(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const headers = lines.shift().split(',').map(x => x.trim());
+  const rows = lines.map(line => {
+    const cols = line.split(',');
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = (cols[i] || '').trim(); });
+    return obj;
+  });
+  positions = rows.map(r => ({
+    symbol:   String(r.symbol || r.ticker || '').toUpperCase(),
+    quantity: Number(r.quantity || 0),
+    avg_cost: Number(r.avg_cost || 0),
+    price:    Number(r.price || 0),
+  })).filter(p => p.symbol);
+  annualDividendMap = {};
+  rows.forEach(r => {
+    const sym = String(r.symbol || r.ticker || '').toUpperCase();
+    annualDividendMap[sym] = Number(r.annual_dividend_per_share || 0);
+  });
+}
+
+async function loadPortfolio() {
+  const fileInput = document.getElementById('portfolioFile');
+  const statusEl  = document.getElementById('loadStatus');
+  if (!fileInput?.files?.length) { if (statusEl) statusEl.textContent = 'Bitte CSV auswählen.'; return; }
+  const text = await fileInput.files[0].text();
+  parseCsv(text);
+  if (statusEl) statusEl.textContent = `${positions.length} Positionen geladen.`;
+  await refreshMetrics();
+}
+
+async function refreshMetrics() {
+  if (!positions.length) return;
+  try {
+    const r = await fetch(`${API}/api/portfolio/metrics`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ positions, annual_dividend_per_share: annualDividendMap }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || 'Fehler');
+    portfolioMetrics = data;
+    renderDashboardKpis(data);
+    renderDonut(data.allocation || []);
+    renderTopFlop(data.allocation || []);
+    renderPortfolioTable(data.allocation || []);
+    renderDividendView(data);
+  } catch (e) {
+    const s = document.getElementById('loadStatus');
+    if (s) s.textContent = 'Backend-Fehler: ' + e.message;
+  }
+}
+
+function renderDashboardKpis(data) {
+  setText('kpiNetWorth', formatEur(data.market_value));
+  const pnl = data.unrealized_pnl || 0;
+  const pnlEl = document.getElementById('kpiPnl');
+  if (pnlEl) { pnlEl.textContent = formatEur(pnl); pnlEl.className = 'kpi-value ' + (pnl >= 0 ? 'pos' : 'neg'); }
+  const pct = data.unrealized_return_pct || 0;
+  const pctEl = document.getElementById('kpiPnlPct');
+  if (pctEl) { pctEl.textContent = formatPctRaw(pct); pctEl.className = 'kpi-sub ' + (pct >= 0 ? 'pos' : 'neg'); }
+  setText('kpiCashflow', formatEur(data.monthly_dividend_forecast));
+  setText('kpiDividend',  formatEur((data.monthly_dividend_forecast || 0) * 12));
+  setText('kpiNetWorthSub', `Kostenbasis: ${formatEur(data.cost_basis)}`);
+}
+
+function renderDonut(allocation) {
+  const canvas = document.getElementById('donutChart');
+  if (!canvas) return;
+  if (donutChartInst) { donutChartInst.destroy(); donutChartInst = null; }
+
+  const labels = allocation.map(a => a.symbol);
+  const values = allocation.map(a => a.weight_pct);
+
+  donutChartInst = new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data: values, backgroundColor: CHART_COLORS, borderColor: '#080d19', borderWidth: 2, hoverOffset: 6 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '70%',
+      plugins: { legend: { display: false }, tooltip: { callbacks: {
+        label: ctx => ` ${ctx.label}: ${ctx.parsed.toFixed(1)}%`
+      }}},
+    },
+  });
+
+  const centerEl = document.getElementById('donutCenter');
+  if (centerEl) {
+    centerEl.querySelector('.donut-center-val').textContent = allocation.length;
+    centerEl.querySelector('.donut-center-lbl').textContent = 'Positionen';
+  }
+
+  const legend = document.getElementById('allocationLegend');
+  if (legend) {
+    legend.innerHTML = allocation.slice(0,8).map((a, i) => `
+      <li class="legend-item">
+        <span class="legend-dot" style="background:${CHART_COLORS[i % CHART_COLORS.length]}"></span>
+        <span class="legend-name">${a.symbol}</span>
+        <span class="legend-pct">${a.weight_pct.toFixed(1)}%</span>
+      </li>`).join('');
+  }
+}
+
+function renderTopFlop(allocation) {
+  const posWithPL = positions.map(p => {
+    const pnl = (p.price - p.avg_cost) * p.quantity;
+    const pct  = p.avg_cost ? (p.price - p.avg_cost) / p.avg_cost * 100 : 0;
+    return { ...p, pnl, pct };
+  }).filter(p => p.avg_cost > 0);
+
+  const sorted = [...posWithPL].sort((a, b) => b.pct - a.pct);
+  const top  = sorted.slice(0, 3);
+  const flop = sorted.slice(-3).reverse();
+
+  function rows(arr) {
+    if (!arr.length) return '<tr><td colspan="3" class="muted-cell">–</td></tr>';
+    return arr.map(p => `
+      <tr>
+        <td><strong>${p.symbol}</strong></td>
+        <td class="num ${p.pct >= 0 ? 'pos' : 'neg'}">${formatPctRaw(p.pct)}</td>
+        <td class="num ${p.pnl >= 0 ? 'pos' : 'neg'}">${formatEur(p.pnl)}</td>
+      </tr>`).join('');
+  }
+  const tb = document.getElementById('topAssetsBody');
+  const fb = document.getElementById('flopAssetsBody');
+  if (tb) tb.innerHTML = rows(top);
+  if (fb) fb.innerHTML = rows(flop);
+}
+
+/* Upload zone */
+document.getElementById('loadPortfolioBtn')?.addEventListener('click', loadPortfolio);
+const uploadZone = document.getElementById('uploadZone');
+if (uploadZone) {
+  uploadZone.addEventListener('click', () => document.getElementById('portfolioFile')?.click());
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.style.borderColor = 'var(--accent)'; });
+  uploadZone.addEventListener('dragleave', () => { uploadZone.style.borderColor = ''; });
+  uploadZone.addEventListener('drop', async e => {
+    e.preventDefault(); uploadZone.style.borderColor = '';
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const text = await file.text();
+      parseCsv(text);
+      const s = document.getElementById('loadStatus');
+      if (s) s.textContent = `${positions.length} Positionen geladen.`;
+      await refreshMetrics();
+    }
+  });
+}
+
+/* ════════════════════════════════════════════
+   PORTFOLIO TABLE VIEW
+   ════════════════════════════════════════════ */
+
+function renderPortfolioTable(allocation) {
+  const weights = Object.fromEntries((allocation || []).map(a => [a.symbol, a.weight_pct]));
+  const tbody = document.getElementById('stocksTableBody');
+  if (!tbody) return;
+  if (!positions.length) {
+    tbody.innerHTML = '<tr><td colspan="10" class="muted-cell">Kein Portfolio geladen.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = positions.map(p => {
+    const mv  = p.quantity * p.price;
+    const pnl = (p.price - p.avg_cost) * p.quantity;
+    const pct = p.avg_cost ? (p.price - p.avg_cost) / p.avg_cost * 100 : 0;
+    const w   = weights[p.symbol] || 0;
+    return `<tr class="clickable" data-sym="${p.symbol}">
+      <td><strong>${p.symbol}</strong></td>
+      <td class="muted">${p.symbol}</td>
+      <td>${formatNum(p.quantity, 0)}</td>
+      <td class="num">${formatNum(p.avg_cost)}</td>
+      <td class="num">${formatNum(p.price)}</td>
+      <td class="num">${formatEur(mv)}</td>
+      <td class="num ${pnl >= 0 ? 'pos' : 'neg'}">${formatEur(pnl)}</td>
+      <td class="num ${pct >= 0 ? 'pos' : 'neg'}">${formatPctRaw(pct)}</td>
+      <td class="num">${w.toFixed(1)}%</td>
+      <td><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" data-sym="${p.symbol}">Analyse →</button></td>
+    </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('tr.clickable').forEach(row => {
+    row.querySelector('button')?.addEventListener('click', e => {
+      e.stopPropagation();
+      const sym = e.target.dataset.sym;
+      if (sym) { loadAnalyse(sym); switchView('analyse'); }
+    });
+  });
+}
+
+/* Search filter in portfolio view */
+document.getElementById('searchInput')?.addEventListener('input', function () {
+  const q = this.value.toUpperCase();
+  document.querySelectorAll('#stocksTableBody tr').forEach(row => {
+    const sym = row.querySelector('td')?.textContent || '';
+    row.style.display = sym.includes(q) ? '' : 'none';
+  });
+});
+
+/* ════════════════════════════════════════════
+   ANALYSE VIEW
+   ════════════════════════════════════════════ */
+
+async function loadAnalyse(symbol) {
+  symbol = symbol.toUpperCase().trim();
+  if (!symbol) return;
+  currentSymbol = symbol;
+  currentRange  = '1y';
+
+  /* show loading state */
+  document.getElementById('analyseEmpty')?.classList.add('hidden');
+  const resultEl = document.getElementById('analyseResult');
+  if (resultEl) resultEl.classList.remove('hidden');
+
+  try {
+    /* Fetch detail + history in parallel */
+    const [detailRes, histRes] = await Promise.all([
+      fetch(`${API}/api/market/detail/${symbol}`),
+      fetch(`${API}/api/market/history/${symbol}?range=1y`),
+    ]);
+    const detail = await detailRes.json();
+    const hist   = await histRes.json();
+    if (!detailRes.ok) throw new Error(detail.detail || 'Fehler beim Laden');
+
+    currentDetail = detail;
+    renderStockHeader(detail);
+    renderPriceChart(hist, detail.currency);
+    render52WBar(detail);
+    renderAnalystCard(detail);
+    renderDescCard(detail);
+    renderQualityTab(detail);
+    renderFundamentalsTab(detail);
+
+    /* ETF tab */
+    const isEtf = (detail.quote_type || '').toUpperCase().includes('ETF') ||
+                  (detail.quote_type || '').toUpperCase() === 'MUTUALFUND';
+    const tabEtfBtn = document.getElementById('tabEtf');
+    if (tabEtfBtn) tabEtfBtn.style.display = isEtf ? '' : 'none';
+
+    if (isEtf) {
+      try {
+        const etfRes  = await fetch(`${API}/api/market/etf/${symbol}`);
+        const etfData = await etfRes.json();
+        if (etfRes.ok) renderEtfDetailTab(etfData);
+      } catch (_) {}
+    }
+
+    /* activate Overview tab */
+    activateTab('overview');
+  } catch (e) {
+    const resultElem = document.getElementById('analyseResult');
+    if (resultElem) resultElem.innerHTML = `<div class="card" style="padding:32px;text-align:center;color:var(--red-text)">Fehler: ${e.message}</div>`;
+  }
+}
+
+function renderStockHeader(d) {
+  setText('stockName', d.name || d.symbol);
+  setText('stockMeta', [d.sector, d.industry, d.exchange].filter(Boolean).join(' · '));
+  setText('stockBadgeType', d.quote_type || 'AKTIE');
+
+  const price = d.price;
+  const priceEl = document.getElementById('stockPrice');
+  if (priceEl) priceEl.textContent = price != null ? `${d.currency || ''} ${formatNum(price)}` : '–';
+
+  const chg = d.change_pct;
+  const chgEl = document.getElementById('stockChange');
+  if (chgEl) {
+    const chgAbs = d.change != null ? formatNum(d.change) : '';
+    chgEl.textContent = chg != null ? `${chgAbs}  (${formatPctRaw(chg * 100)})` : '–';
+    chgEl.className = 'stock-change ' + ((chg || 0) >= 0 ? 'pos' : 'neg');
+  }
+
+  setText('hdrMarketCap', formatLargeNum(d.market_cap, d.currency));
+  setText('hdrPE',        formatNum(d.pe_ratio));
+  setText('hdrFwdPE',     formatNum(d.forward_pe));
+  setText('hdrPB',        formatNum(d.price_to_book));
+  setText('hdrPS',        formatNum(d.price_to_sales));
+  setText('hdrEvEbitda',  formatNum(d.ev_to_ebitda));
+  setText('hdrDivYield',  d.dividend_yield != null ? formatNum(d.dividend_yield * 100) + ' %' : '–');
+  setText('hdrBeta',      formatNum(d.beta));
+  setText('hdrW52H',      formatNum(d.week_52_high));
+  setText('hdrW52L',      formatNum(d.week_52_low));
+  setText('chartSymbolLabel', `${d.symbol} – Kursverlauf`);
+}
+
+/* ── Price chart ── */
+function renderPriceChart(hist, currency) {
+  destroyChart('priceChartInst');
+  destroyChart('volumeChartInst');
+
+  const points = hist.data || [];
+  if (!points.length) return;
+
+  const range   = hist.range || '1y';
+  const labels  = points.map(p => formatDate(p.ts, range));
+  const closes  = points.map(p => p.close);
+  const volumes = points.map(p => p.volume);
+
+  /* Performance badge */
+  const perfEl = document.getElementById('chartPerfBadge');
+  if (perfEl && hist.perf_pct != null) {
+    perfEl.textContent = (hist.perf_pct >= 0 ? '+' : '') + hist.perf_pct.toFixed(2) + ' %';
+    perfEl.style.color = hist.perf_pct >= 0 ? 'var(--green-text)' : 'var(--red-text)';
+  }
+
+  /* Price line chart */
+  const priceCanvas = document.getElementById('priceChart');
+  if (priceCanvas) {
+    const ctx  = priceCanvas.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 280);
+    const positive = (hist.perf_pct || 0) >= 0;
+    grad.addColorStop(0,   positive ? 'rgba(59,130,246,0.35)' : 'rgba(239,68,68,0.35)');
+    grad.addColorStop(1,   'rgba(0,0,0,0)');
+
+    priceChartInst = new Chart(priceCanvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: currency || '',
+          data: closes,
+          borderColor: positive ? '#3b82f6' : '#ef4444',
+          borderWidth: 2,
+          fill: true,
+          backgroundColor: grad,
+          tension: 0.1,
+          pointRadius: 0,
+          pointHitRadius: 20,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: {
+            label: ctx => ` ${ctx.parsed.y.toFixed(2)} ${currency || ''}`,
+          }},
+        },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7fa3', maxTicksLimit: 8, font: { size: 11 } } },
+          y: { position: 'right', grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7fa3', font: { size: 11 }, callback: v => v.toFixed(2) } },
+        },
+      },
+    });
+  }
+
+  /* Volume bar chart */
+  const volCanvas = document.getElementById('volumeChart');
+  if (volCanvas) {
+    volumeChartInst = new Chart(volCanvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{ data: volumes, backgroundColor: 'rgba(59,130,246,0.25)', borderWidth: 0 }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: {
+          x: { display: false },
+          y: { display: false },
+        },
+      },
+    });
+  }
+}
+
+function destroyChart(varName) {
+  if (varName === 'priceChartInst'   && priceChartInst)   { priceChartInst.destroy();   priceChartInst = null; }
+  if (varName === 'volumeChartInst'  && volumeChartInst)  { volumeChartInst.destroy();  volumeChartInst = null; }
+  if (varName === 'radarChartInst'   && radarChartInst)   { radarChartInst.destroy();   radarChartInst = null; }
+  if (varName === 'etfSectorChartInst' && etfSectorChartInst) { etfSectorChartInst.destroy(); etfSectorChartInst = null; }
+  if (varName === 'divChartInst'     && divChartInst)     { divChartInst.destroy();     divChartInst = null; }
+  if (varName === 'scenarioChartInst'&& scenarioChartInst){ scenarioChartInst.destroy(); scenarioChartInst = null; }
+  if (varName === 'donutChartInst'   && donutChartInst)   { donutChartInst.destroy();   donutChartInst = null; }
+}
+
+/* Range buttons */
+document.querySelectorAll('.range-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    if (!currentSymbol) return;
+    document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentRange = btn.dataset.range;
+    const res  = await fetch(`${API}/api/market/history/${currentSymbol}?range=${currentRange}`);
+    const hist = await res.json();
+    renderPriceChart(hist, currentDetail?.currency);
+  });
+});
+
+/* 52W range bar */
+function render52WBar(d) {
+  const lo = d.week_52_low, hi = d.week_52_high, price = d.price;
+  setText('rangeBarLow',  formatNum(lo));
+  setText('rangeBarHigh', formatNum(hi));
+  if (lo != null && hi != null && price != null && hi > lo) {
+    const pct    = ((price - lo) / (hi - lo)) * 100;
+    const fillEl = document.getElementById('rangeBarFill');
+    const markEl = document.getElementById('rangeBarMarker');
+    if (fillEl) fillEl.style.width = pct + '%';
+    if (markEl) markEl.style.left  = pct + '%';
+    setText('rangeBarPriceLabel', `Aktuell: ${formatNum(price)} (${pct.toFixed(0)}% über 52W-Tief)`);
+  }
+}
+
+/* Analyst card */
+function renderAnalystCard(d) {
+  const rec = (d.recommendation || '').toLowerCase();
+  const labels = { strong_buy:'Stark Kaufen', buy:'Kaufen', hold:'Halten', sell:'Verkaufen', strong_sell:'Stark Verkaufen' };
+  const classes = { strong_buy:'', buy:'', hold:'hold', sell:'sell', strong_sell:'sell' };
+  const el = document.getElementById('analystConsensus');
+  if (el) {
+    el.textContent = labels[rec] || rec || '–';
+    el.className = 'analyst-consensus ' + (classes[rec] || '');
+  }
+  setText('analystTarget', formatNum(d.target_price) + (d.currency ? ' ' + d.currency : ''));
+  setText('analystLow',    formatNum(d.target_low));
+  setText('analystHigh',   formatNum(d.target_high));
+  setText('analystCount',  d.analyst_count != null ? d.analyst_count + ' Analysten' : '–');
+}
+
+/* Description */
+function renderDescCard(d) {
+  const card = document.getElementById('descCard');
+  const text = document.getElementById('descText');
+  if (!d.description) { if (card) card.style.display = 'none'; return; }
+  if (card) card.style.display = '';
+  if (text) text.textContent = d.description;
+}
+
+/* Analyse search wiring */
+document.getElementById('analyseSearchBtn')?.addEventListener('click', () => {
+  const val = document.getElementById('analyseSearch')?.value.trim();
+  if (val) loadAnalyse(val);
+});
+document.getElementById('analyseSearch')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const val = e.target.value.trim();
+    if (val) loadAnalyse(val);
+  }
+});
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => loadAnalyse(chip.dataset.sym));
+});
+
+/* ════════════════════════════════════════════
+   QUALITY CHECK TAB
+   ════════════════════════════════════════════ */
+
+function calculateQualityScores(d) {
+  const clamp = v => Math.min(100, Math.max(0, Math.round(v)));
+
+  /* Value: low PE/PB/EV = good */
+  let value = 45;
+  const pe = d.pe_ratio;
+  if (pe != null) { if (pe < 15) value += 25; else if (pe < 25) value += 10; else if (pe > 40) value -= 20; }
+  const pb = d.price_to_book;
+  if (pb != null) { if (pb < 2) value += 15; else if (pb < 5) value += 5; else if (pb > 10) value -= 15; }
+
+  /* Growth */
+  let growth = 30;
+  if (d.revenue_growth  != null) growth += Math.min(40, d.revenue_growth  * 200);
+  if (d.earnings_growth != null) growth += Math.min(25, d.earnings_growth * 150);
+
+  /* Quality (profitability) */
+  let quality = 35;
+  if (d.profit_margin  != null) quality += Math.min(25, d.profit_margin  * 100);
+  if (d.gross_margin   != null) quality += Math.min(15, d.gross_margin   * 30);
+  if (d.roe            != null) quality += Math.min(20, d.roe            * 80);
+
+  /* Dividend */
+  let dividend = 10;
+  const yld = (d.dividend_yield || 0) * 100;
+  if (yld > 5) dividend = 95; else if (yld > 3) dividend = 78; else if (yld > 1) dividend = 55; else if (yld > 0) dividend = 30;
+
+  /* Safety (low debt, high current ratio) */
+  let safety = 60;
+  if (d.debt_to_equity != null) { if (d.debt_to_equity < 30) safety += 20; else if (d.debt_to_equity > 150) safety -= 30; }
+  if (d.current_ratio  != null) { if (d.current_ratio > 2) safety += 15; else if (d.current_ratio < 1) safety -= 20; }
+
+  /* Momentum: 52W position */
+  let momentum = 50;
+  const lo = d.week_52_low, hi = d.week_52_high, price = d.price;
+  if (lo != null && hi != null && price != null && hi > lo) {
+    momentum = Math.round((price - lo) / (hi - lo) * 100);
+  }
+
+  /* Volatility: inverted beta */
+  const beta = d.beta || 1;
+  const volatility = clamp(100 - Math.abs(beta - 0.5) * 50);
+
+  return {
+    value:      clamp(value),
+    growth:     clamp(growth),
+    quality:    clamp(quality),
+    dividend:   clamp(dividend),
+    safety:     clamp(safety),
+    momentum:   clamp(momentum),
+    volatility: clamp(volatility),
+  };
+}
+
+function renderQualityTab(d) {
+  const scores = calculateQualityScores(d);
+
+  /* Radar chart */
+  destroyChart('radarChartInst');
+  const radarCanvas = document.getElementById('radarChart');
+  if (radarCanvas) {
+    const labels = ['Bewertung','Wachstum','Qualität','Dividende','Sicherheit','Momentum','Volatilität'];
+    const vals   = [scores.value, scores.growth, scores.quality, scores.dividend, scores.safety, scores.momentum, scores.volatility];
+    radarChartInst = new Chart(radarCanvas, {
+      type: 'radar',
+      data: {
+        labels,
+        datasets: [{
+          label: d.symbol,
+          data: vals,
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59,130,246,0.12)',
+          pointBackgroundColor: '#3b82f6',
+          pointRadius: 4,
+          borderWidth: 2,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          r: {
+            min: 0, max: 100,
+            grid:       { color: 'rgba(255,255,255,0.08)' },
+            angleLines: { color: 'rgba(255,255,255,0.08)' },
+            pointLabels:{ color: '#e4eaf5', font: { size: 12 } },
+            ticks:      { display: false, stepSize: 25 },
+          },
+        },
+        plugins: { legend: { display: false } },
+      },
+    });
+  }
+
+  /* Quality rows */
+  const checks = {
+    qGrowth: [
+      { label: 'Umsatzwachstum (5J)', val: d.revenue_growth,   pass: (d.revenue_growth || 0) > 0.05, fmt: formatPct },
+      { label: 'Gewinnwachstum',      val: d.earnings_growth,  pass: (d.earnings_growth || 0) > 0,   fmt: formatPct },
+    ],
+    qProfit: [
+      { label: 'Nettogewinnmarge',    val: d.profit_margin,    pass: (d.profit_margin  || 0) > 0.1,  fmt: formatPct },
+      { label: 'Bruttomarge',         val: d.gross_margin,     pass: (d.gross_margin   || 0) > 0.3,  fmt: formatPct },
+      { label: 'Eigenkapitalrendite', val: d.roe,              pass: (d.roe            || 0) > 0.1,  fmt: formatPct },
+    ],
+    qSafety: [
+      { label: 'Verschuldungsgrad',   val: d.debt_to_equity,   pass: (d.debt_to_equity || 999) < 80, fmt: v => formatNum(v) + ' %' },
+      { label: 'Current Ratio',       val: d.current_ratio,    pass: (d.current_ratio  || 0) > 1.5,  fmt: v => formatNum(v, 2) },
+      { label: 'Beta',                val: d.beta,             pass: (d.beta           || 1) < 1.5,  fmt: v => formatNum(v, 2) },
+    ],
+    qValue: [
+      { label: 'KGV (trailing)',      val: d.pe_ratio,         pass: d.pe_ratio != null && d.pe_ratio < 30, fmt: v => formatNum(v, 1) + 'x' },
+      { label: 'KBV',                 val: d.price_to_book,    pass: d.price_to_book != null && d.price_to_book < 5, fmt: v => formatNum(v, 1) + 'x' },
+      { label: 'EV/EBITDA',           val: d.ev_to_ebitda,     pass: d.ev_to_ebitda  != null && d.ev_to_ebitda  < 20, fmt: v => formatNum(v, 1) + 'x' },
+    ],
+  };
+
+  let totalPass = 0, totalChecks = 0;
+  Object.entries(checks).forEach(([id, rows]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = rows.map(row => {
+      const hasVal = row.val != null;
+      const pass   = hasVal && row.pass;
+      const icon   = !hasVal ? '◌' : pass ? '✓' : '✗';
+      const cls    = !hasVal ? 'neutral' : pass ? 'ok' : 'bad';
+      if (hasVal) { totalChecks++; if (pass) totalPass++; }
+      const barPct = hasVal ? Math.round(row.val != null ? Math.min(100, Math.abs(row.val) * (row.label.includes('Marge') || row.label.includes('wachstum') || row.label.includes('rendite') ? 200 : 10)) : 0) : 0;
+      return `<div class="quality-row">
+        <div class="quality-row-left">
+          <span class="quality-check ${cls}">${icon}</span>
+          <span>${row.label}</span>
+        </div>
+        <span class="quality-val">${hasVal ? row.fmt(row.val) : '–'}</span>
+      </div>`;
+    }).join('');
+  });
+
+  const score = totalChecks ? Math.round((totalPass / totalChecks) * 10) : 0;
+  const badge = document.getElementById('qualityScoreBadge');
+  if (badge) {
+    badge.textContent = `${score}/10`;
+    badge.style.color = score >= 7 ? 'var(--green-text)' : score >= 4 ? 'var(--yellow)' : 'var(--red-text)';
+  }
+}
+
+/* ════════════════════════════════════════════
+   FUNDAMENTALS TAB
+   ════════════════════════════════════════════ */
+
+function renderFundamentalsTab(d) {
+  const container = document.getElementById('fundamentalsGrid');
+  if (!container) return;
+
+  const sections = [
+    {
+      title: 'Bewertung',
+      rows: [
+        ['KGV (trailing)',   d.pe_ratio,        v => formatNum(v, 1) + 'x'],
+        ['KGV (forward)',    d.forward_pe,      v => formatNum(v, 1) + 'x'],
+        ['KBV',              d.price_to_book,   v => formatNum(v, 2) + 'x'],
+        ['KUV',              d.price_to_sales,  v => formatNum(v, 2) + 'x'],
+        ['EV/EBITDA',        d.ev_to_ebitda,   v => formatNum(v, 1) + 'x'],
+        ['Enterprise Value', d.ev,              v => formatLargeNum(v, d.currency)],
+      ],
+    },
+    {
+      title: 'Profitabilität',
+      rows: [
+        ['Nettogewinnmarge', d.profit_margin,    formatPct],
+        ['Bruttomarge',      d.gross_margin,     formatPct],
+        ['Operative Marge',  d.operating_margin, formatPct],
+        ['ROE',              d.roe,              formatPct],
+        ['ROA',              d.roa,              formatPct],
+      ],
+    },
+    {
+      title: 'Wachstum',
+      rows: [
+        ['Umsatzwachstum',   d.revenue_growth,   formatPct],
+        ['Gewinnwachstum',   d.earnings_growth,  formatPct],
+        ['Gesamtumsatz',     d.revenue,          v => formatLargeNum(v, d.currency)],
+        ['Free Cashflow',    d.free_cashflow,    v => formatLargeNum(v, d.currency)],
+      ],
+    },
+    {
+      title: 'Bilanz & Risiko',
+      rows: [
+        ['Verschuldungsgrad', d.debt_to_equity, v => formatNum(v, 1) + ' %'],
+        ['Current Ratio',     d.current_ratio,  v => formatNum(v, 2)],
+        ['Beta',              d.beta,           v => formatNum(v, 2)],
+        ['52W Hoch',          d.week_52_high,   v => formatNum(v, 2)],
+        ['52W Tief',          d.week_52_low,    v => formatNum(v, 2)],
+      ],
+    },
+    {
+      title: 'Aktie & Dividende',
+      rows: [
+        ['EPS (trailing)',   d.eps,              v => formatNum(v, 2)],
+        ['EPS (forward)',    d.forward_eps,      v => formatNum(v, 2)],
+        ['Buchwert/Aktie',  d.book_value,       v => formatNum(v, 2)],
+        ['Dividende',        d.dividend_rate,    v => formatNum(v, 2) + ' ' + (d.currency || '')],
+        ['Div.-Rendite',     d.dividend_yield,   formatPct],
+        ['Ausschüttungsq.', d.payout_ratio,     formatPct],
+      ],
+    },
+    {
+      title: 'Markt',
+      rows: [
+        ['Market Cap',        d.market_cap,          v => formatLargeNum(v, d.currency)],
+        ['Kurs',              d.price,               v => formatNum(v, 2) + ' ' + (d.currency || '')],
+        ['Volumen',           d.volume,              v => formatNum(v, 0)],
+        ['Ø Volumen',         d.avg_volume,          v => formatNum(v, 0)],
+        ['Ausstehende Aktien',d.shares_outstanding,  v => formatLargeNum(v)],
+        ['Land',              d.country,             v => v],
+      ],
+    },
+  ];
+
+  container.innerHTML = sections.map(sec => `
+    <div class="fundamentals-section">
+      <div class="fundamentals-section-title">${sec.title}</div>
+      ${sec.rows.map(([label, val, fmt]) => `
+        <div class="fund-row">
+          <span class="fund-label">${label}</span>
+          <span class="fund-val">${val != null ? fmt(val) : '–'}</span>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+/* ════════════════════════════════════════════
+   ETF DETAIL TAB
+   ════════════════════════════════════════════ */
+
+function renderEtfDetailTab(etf) {
+  /* Meta grid */
+  const metaGrid = document.getElementById('etfMetaGrid');
+  if (metaGrid) {
+    const items = [
+      ['Total Assets',   formatLargeNum(etf.total_assets, etf.currency)],
+      ['Ausschüttung',   etf.yield != null ? formatNum(etf.yield * 100, 2) + ' %' : '–'],
+      ['TER / Kosten',   etf.expense_ratio != null ? formatNum(etf.expense_ratio * 100, 2) + ' %' : '–'],
+      ['YTD Return',     etf.ytd_return    != null ? formatPctRaw(etf.ytd_return * 100) : '–'],
+      ['3J Ø Return',    etf.three_year_return != null ? formatPctRaw(etf.three_year_return * 100) : '–'],
+      ['5J Ø Return',    etf.five_year_return  != null ? formatPctRaw(etf.five_year_return  * 100) : '–'],
+      ['Kategorie',      etf.category || '–'],
+      ['Fondsgesellschaft', etf.family || '–'],
+    ];
+    metaGrid.innerHTML = items.map(([label, val]) => `
+      <div class="etf-meta-item">
+        <div class="etf-meta-label">${label}</div>
+        <div class="etf-meta-val">${val}</div>
+      </div>`).join('');
+  }
+
+  /* Sector chart */
+  destroyChart('etfSectorChartInst');
+  const sectorCanvas = document.getElementById('etfSectorChart');
+  const sectors = (etf.sector_weights || []).slice(0, 8);
+  if (sectorCanvas && sectors.length) {
+    etfSectorChartInst = new Chart(sectorCanvas, {
+      type: 'bar',
+      data: {
+        labels: sectors.map(s => s.sector),
+        datasets: [{
+          data: sectors.map(s => s.weight),
+          backgroundColor: CHART_COLORS,
+          borderWidth: 0,
+          borderRadius: 4,
+        }],
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x.toFixed(1)}%` } } },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7fa3', callback: v => v + '%' } },
+          y: { grid: { display: false }, ticks: { color: '#e4eaf5', font: { size: 12 } } },
+        },
+      },
+    });
+  }
+
+  /* Holdings table */
+  const tbody = document.getElementById('etfHoldingsBody');
+  if (tbody) {
+    const holdings = etf.top_holdings || [];
+    tbody.innerHTML = holdings.map(h => {
+      const w = h.weight || 0;
+      return `<tr>
+        <td>${h.name || '–'}</td>
+        <td class="muted">${h.symbol || ''}</td>
+        <td class="num">${w.toFixed(2)} %</td>
+        <td style="width:160px;padding-right:16px">
+          <div class="weight-bar-track"><div class="weight-bar-fill" style="width:${Math.min(100, w * 5)}%"></div></div>
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="4" class="muted-cell">Keine Holdings-Daten verfügbar</td></tr>';
+  }
+}
+
+/* ── Tab switching ── */
+function activateTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+  document.querySelectorAll('.tab-content').forEach(c => {
+    c.classList.toggle('active', c.id === 'tab-' + tabId);
+    c.classList.toggle('hidden', c.id !== 'tab-' + tabId);
+  });
+}
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+});
+
+/* ════════════════════════════════════════════
+   ETF EXPLORER VIEW
+   ════════════════════════════════════════════ */
+
+function getCheckedValues(name) {
+  return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(el => el.value);
+}
+
+function renderEtfCards() {
+  const assets   = getCheckedValues('asset');
+  const regions  = getCheckedValues('region');
+  const styles   = getCheckedValues('style');
+
+  const filtered = POPULAR_ETFS.filter(etf =>
+    (!assets.length  || assets.includes(etf.asset))  &&
+    (!regions.length || regions.includes(etf.region)) &&
+    (!styles.length  || styles.includes(etf.style))
+  );
+
+  const grid = document.getElementById('etfCardsGrid');
+  const cnt  = document.getElementById('etfCount');
+  if (cnt) cnt.textContent = `${filtered.length} ETFs`;
+  if (!grid) return;
+
+  grid.innerHTML = filtered.map(etf => `
+    <div class="etf-card" data-sym="${etf.symbol}">
+      <div class="etf-card-symbol">${etf.symbol}</div>
+      <div class="etf-card-name">${etf.name}</div>
+      <div class="etf-card-meta">
+        <div class="etf-meta-kpi">
+          <div class="etf-meta-kpi-label">Kategorie</div>
+          <div class="etf-meta-kpi-val">${etf.category}</div>
+        </div>
+        <div class="etf-meta-kpi">
+          <div class="etf-meta-kpi-label">Region</div>
+          <div class="etf-meta-kpi-val">${etf.region.toUpperCase()}</div>
+        </div>
+      </div>
+    </div>`).join('');
+
+  grid.querySelectorAll('.etf-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const sym = card.dataset.sym;
+      if (sym) { loadAnalyse(sym); switchView('analyse'); }
+    });
+  });
+}
+
+document.getElementById('etfFilterBtn')?.addEventListener('click', renderEtfCards);
+
+/* ════════════════════════════════════════════
+   DIVIDENDS VIEW
+   ════════════════════════════════════════════ */
+
+function renderDividendView(metrics) {
+  const monthlyForecast = metrics?.monthly_dividend_forecast || 0;
+
+  /* Monthly bar chart – same amount each month (simple forecast) */
+  destroyChart('divChartInst');
+  const canvas = document.getElementById('divChart');
+  if (canvas) {
+    const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    /* Add slight variation by position to make it look realistic */
+    const vals = months.map((_, i) => {
+      const base = monthlyForecast;
+      const variation = base * 0.15 * Math.sin(i * 0.8);
+      return Math.max(0, base + variation);
+    });
+
+    divChartInst = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: months,
+        datasets: [{
+          label: 'Dividende (€)',
+          data: vals,
+          backgroundColor: 'rgba(16,185,129,0.35)',
+          borderColor: '#10b981',
+          borderWidth: 1,
+          borderRadius: 6,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` € ${ctx.parsed.y.toFixed(2)}` } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#6b7fa3' } },
+          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7fa3', callback: v => '€ ' + v.toFixed(0) } },
+        },
+      },
+    });
+  }
+
+  /* Table */
+  const tbody = document.getElementById('dividendTableBody');
+  if (!tbody) return;
+  if (!positions.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="muted-cell">Kein Portfolio geladen.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = positions.map(p => {
+    const annDiv = annualDividendMap[p.symbol] || 0;
+    const monthly = annDiv * p.quantity / 12;
+    const yoc = p.avg_cost ? (annDiv / p.avg_cost) * 100 : 0;
+    return `<tr>
+      <td><strong>${p.symbol}</strong></td>
+      <td class="num">€ ${formatNum(annDiv * p.quantity)}</td>
+      <td class="num ${monthly > 0 ? 'pos' : 'muted'}">€ ${formatNum(monthly)}</td>
+      <td class="num">${yoc > 0 ? formatNum(yoc) + ' %' : '–'}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ════════════════════════════════════════════
+   EARNINGS VIEW
+   ════════════════════════════════════════════ */
+
+async function refreshEarnings() {
+  const cardsEl = document.getElementById('earningsCards');
+  if (cardsEl) cardsEl.innerHTML = '<p class="muted-cell">Lade Earnings…</p>';
+  try {
+    await fetch(`${API}/api/earnings/refresh_holdings`, { method: 'POST' });
+    const res  = await fetch(`${API}/api/earnings/recent?limit=20`);
+    const data = await res.json();
+    const rows = data.rows || [];
+    if (!rows.length) {
+      if (cardsEl) cardsEl.innerHTML = '<p class="muted-cell">Keine Earnings-Daten. Holdings mit Earnings-URLs konfigurieren.</p>';
+      return;
+    }
+    if (cardsEl) {
+      cardsEl.innerHTML = rows.map(r => {
+        const sig = r.signals || {};
+        const chips = [
+          sig.revenue ? `<span class="signal-chip signal-ok">Revenue: ${sig.revenue}</span>` : '',
+          sig.eps     ? `<span class="signal-chip signal-ok">EPS: ${sig.eps}</span>` : '',
+          `<span class="signal-chip signal-warn">Guidance: ${sig.guidance}</span>`,
+          `<span class="signal-chip signal-warn">Margins: ${sig.margin}</span>`,
+        ].filter(Boolean).join('');
+        const dt = r.fetched_at ? new Date(r.fetched_at).toLocaleDateString('de-DE') : '';
+        return `<div class="earnings-card">
+          <div class="earnings-card-header">
+            <span class="earnings-symbol">${r.symbol}</span>
+            <span class="earnings-date">${dt}</span>
+          </div>
+          <p class="muted" style="font-size:12px;margin-bottom:6px">${r.summary || '–'}</p>
+          <div class="earnings-signals">${chips}</div>
+        </div>`;
+      }).join('');
+    }
+  } catch (e) {
+    if (cardsEl) cardsEl.innerHTML = `<p class="muted-cell" style="color:var(--red-text)">Fehler: ${e.message}</p>`;
+  }
+}
+
+document.getElementById('refreshEarningsBtn')?.addEventListener('click', refreshEarnings);
+
+/* ════════════════════════════════════════════
+   SCENARIO VIEW
+   ════════════════════════════════════════════ */
+
+function updateSliderLabels() {
+  const es = document.getElementById('equityShock');
+  const rs = document.getElementById('rateShock');
+  const dc = document.getElementById('divCut');
+  if (es) setText('equityShockVal', `-${es.value} %`);
+  if (rs) setText('rateShockVal',   `+${rs.value} %`);
+  if (dc) setText('divCutVal',      `-${dc.value} %`);
+}
+
+['equityShock','rateShock','divCut'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', updateSliderLabels);
+});
+updateSliderLabels();
+
+async function applyScenario() {
+  if (!positions.length) {
+    setText('scDelta', 'Portfolio laden'); return;
+  }
+  try {
+    const es = Number(document.getElementById('equityShock')?.value || 0);
+    const rs = Number(document.getElementById('rateShock')?.value   || 0);
+    const dc = Number(document.getElementById('divCut')?.value      || 0);
+
+    const r = await fetch(`${API}/api/scenario/apply`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ positions, equity_shock_pct: es, rate_shock_pct: rs, dividend_cut_pct: dc }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || 'Fehler');
+
+    setText('scBefore',   formatEur(data.before_value));
+    setText('scAfter',    formatEur(data.after_value));
+    const deltaEl    = document.getElementById('scDelta');
+    const deltaPctEl = document.getElementById('scDeltaPct');
+    if (deltaEl)    { deltaEl.textContent    = formatEur(data.delta);       deltaEl.className    = 'sc-val ' + (data.delta >= 0 ? 'pos' : 'neg'); }
+    if (deltaPctEl) { deltaPctEl.textContent = formatNum(data.delta_pct) + ' %'; deltaPctEl.className = 'sc-val ' + (data.delta_pct >= 0 ? 'pos' : 'neg'); }
+
+    /* Mini comparison bar chart */
+    destroyChart('scenarioChartInst');
+    const canvas = document.getElementById('scenarioChart');
+    if (canvas) {
+      scenarioChartInst = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: ['Vorher', 'Nachher'],
+          datasets: [{
+            data: [data.before_value, data.after_value],
+            backgroundColor: ['rgba(59,130,246,0.6)', 'rgba(239,68,68,0.6)'],
+            borderColor:     ['#3b82f6', '#ef4444'],
+            borderWidth: 1, borderRadius: 8,
+          }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` € ${ctx.parsed.y.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}` } } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#e4eaf5' } },
+            y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7fa3' } },
+          },
+        },
+      });
+    }
+  } catch (e) {
+    setText('scDelta', 'Fehler: ' + e.message);
+  }
+}
+
+document.getElementById('applyScenarioBtn')?.addEventListener('click', applyScenario);
+
+/* ════════════════════════════════════════════
+   HELPERS
+   ════════════════════════════════════════════ */
+
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val ?? '–';
+}
+
+/* ── Init ── */
+switchView('dashboard');
+renderEtfCards();
+
+
+/* ============ DEMO OVERRIDES ============ */
+(function initDemo() {
+  // pre-load demo portfolio
+  positions = DEMO_POSITIONS.map(p => ({
+    symbol: p.symbol, quantity: p.quantity, avg_cost: p.avg_cost, price: p.price
   }));
+  annualDividendMap = {};
+  DEMO_POSITIONS.forEach(p => { annualDividendMap[p.symbol] = p.div; });
+
+  const allocation = positions.map(p => {
+    const mv = p.quantity * p.price;
+    return { symbol: p.symbol, weight_pct: mv };
+  });
+  const total = allocation.reduce((s,a) => s + a.weight_pct, 0);
+  allocation.forEach(a => a.weight_pct = parseFloat((a.weight_pct/total*100).toFixed(2)));
+
+  const mv = positions.reduce((s,p) => s + p.quantity*p.price, 0);
+  const cb = positions.reduce((s,p) => s + p.quantity*p.avg_cost, 0);
+  const pnl = mv - cb;
+  const pnlPct = cb ? pnl/cb*100 : 0;
+  const monthDiv = DEMO_POSITIONS.reduce((s,p) => s + p.div*p.quantity/12, 0);
+
+  setText('kpiNetWorth', '€ ' + mv.toLocaleString('de-DE',{maximumFractionDigits:0}));
+  setText('kpiNetWorthSub', 'Kostenbasis: € ' + cb.toLocaleString('de-DE',{maximumFractionDigits:0}));
+  const pnlEl = document.getElementById('kpiPnl');
+  if(pnlEl) { pnlEl.textContent='€ '+pnl.toLocaleString('de-DE',{maximumFractionDigits:0}); pnlEl.className='kpi-value '+(pnl>=0?'pos':'neg'); }
+  const pctEl = document.getElementById('kpiPnlPct');
+  if(pctEl) { pctEl.textContent=(pnlPct>=0?'+':'')+pnlPct.toFixed(1)+' %'; pctEl.className='kpi-sub '+(pnlPct>=0?'pos':'neg'); }
+  setText('kpiCashflow','€ '+monthDiv.toFixed(0));
+  setText('kpiDividend','€ '+(monthDiv*12).toFixed(0));
+
+  renderDonut(allocation);
+  renderTopFlop(allocation);
+  renderPortfolioTable(allocation);
+  renderDividendView({ monthly_dividend_forecast: monthDiv });
+
+  // Demo price chart with realistic AAPL-like data
+  const pts = [];
+  let price = 175;
+  const now = Date.now()/1000;
+  for(let i=252;i>=0;i--) {
+    price *= (1 + (Math.random()-0.47)*0.018);
+    price = Math.max(160, Math.min(240, price));
+    pts.push({ ts: now - i*86400, close: parseFloat(price.toFixed(2)), volume: Math.round(40e6 + Math.random()*30e6) });
+  }
+  pts[pts.length-1].close = 213.49;
+  currentDetail = DEMO_DETAIL;
+  renderPriceChart({ data:pts, range:'1y', perf_pct:18.4, currency:'USD' }, 'USD');
+  renderQualityTab(DEMO_DETAIL);
+  renderFundamentalsTab(DEMO_DETAIL);
+  renderEtfCards();
+
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => loadDemoAnalyse(chip.dataset.sym));
+  });
+  document.getElementById('analyseSearchBtn')?.addEventListener('click', () => {
+    const v = document.getElementById('analyseSearch')?.value.trim();
+    if(v) loadDemoAnalyse(v);
+  });
+  document.getElementById('analyseSearch')?.addEventListener('keydown', e => {
+    if(e.key==='Enter') { const v=e.target.value.trim(); if(v) loadDemoAnalyse(v); }
+  });
+})();
+
+function loadDemoAnalyse(sym) {
+  const d = { ...DEMO_DETAIL, symbol:sym.toUpperCase(), name: sym.toUpperCase()+' Corp.' };
+  // vary the numbers slightly per symbol for variety
+  const seed = sym.charCodeAt(0)/100;
+  d.pe_ratio = parseFloat((d.pe_ratio * (0.7+seed*0.6)).toFixed(1));
+  d.revenue_growth = parseFloat((Math.random()*0.2-0.05).toFixed(3));
+  d.earnings_growth = parseFloat((Math.random()*0.3-0.05).toFixed(3));
+  d.profit_margin = parseFloat((Math.random()*0.3+0.05).toFixed(3));
+  d.dividend_yield = parseFloat((Math.random()*0.04).toFixed(4));
+  d.beta = parseFloat((0.7+Math.random()*1.2).toFixed(2));
+  d.market_cap = Math.round((100e9 + Math.random()*2e12)*10)/10;
+  currentDetail = d;
+  document.getElementById('analyseEmpty')?.classList.add('hidden');
+  document.getElementById('analyseResult')?.classList.remove('hidden');
+  renderStockHeader(d);
+  const pts=[];let p=180;const now=Date.now()/1000;
+  for(let i=252;i>=0;i--){p*=(1+(Math.random()-0.47)*0.018);p=Math.max(100,Math.min(500,p));pts.push({ts:now-i*86400,close:parseFloat(p.toFixed(2)),volume:Math.round(20e6+Math.random()*40e6)});};
+  const perf=parseFloat(((pts[pts.length-1].close-pts[0].close)/pts[0].close*100).toFixed(2));
+  renderPriceChart({data:pts,range:'1y',perf_pct:perf,currency:d.currency},d.currency);
+  render52WBar(d);
+  renderAnalystCard(d);
+  renderDescCard(d);
+  renderQualityTab(d);
+  renderFundamentalsTab(d);
+  activateTab('overview');
+  switchView('analyse');
+}
+
+// Scenario demo
+document.getElementById('applyScenarioBtn')?.addEventListener('click', () => {
+  const es=Number(document.getElementById('equityShock')?.value||0);
+  const before=124850;
+  const after=parseFloat((before*(1-es/100)).toFixed(0));
+  const delta=after-before;
+  setText('scBefore','€ '+before.toLocaleString('de-DE'));
+  setText('scAfter','€ '+after.toLocaleString('de-DE'));
+  const dEl=document.getElementById('scDelta');
+  if(dEl){dEl.textContent='€ '+delta.toLocaleString('de-DE');dEl.className='sc-val '+(delta>=0?'pos':'neg');}
+  const pEl=document.getElementById('scDeltaPct');
+  if(pEl){pEl.textContent=(delta/before*100).toFixed(1)+' %';pEl.className='sc-val '+(delta>=0?'pos':'neg');}
+  destroyChart('scenarioChartInst');
+  const c=document.getElementById('scenarioChart');
+  if(c){scenarioChartInst=new Chart(c,{type:'bar',data:{labels:['Vorher','Nachher'],datasets:[{data:[before,after],backgroundColor:['rgba(59,130,246,0.6)','rgba(239,68,68,0.6)'],borderColor:['#3b82f6','#ef4444'],borderWidth:1,borderRadius:8}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#e4eaf5'}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b7fa3'}}}}}}}
+});
 </script>
 </body>
 </html>

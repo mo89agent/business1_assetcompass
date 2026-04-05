@@ -2,7 +2,7 @@ name: Deploy UI Preview to GitHub Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "claude/stock-analysis-integration-XtWgA"]
   workflow_dispatch:
 
 permissions:

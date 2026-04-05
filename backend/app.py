@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import List
+from typing import Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +9,9 @@ from pydantic import BaseModel, Field
 
 from .connectors import (
     fetch_report_text,
+    fetch_yahoo_detail,
+    fetch_yahoo_etf_detail,
+    fetch_yahoo_history,
     fetch_yahoo_quote,
     normalize_broker_rows,
     parse_broker_csv,
@@ -58,7 +61,7 @@ class PositionIn(BaseModel):
 
 class PortfolioIn(BaseModel):
     positions: List[PositionIn]
-    annual_dividend_per_share: dict[str, float] = {}
+    annual_dividend_per_share: Dict[str, float] = {}
 
 
 class CashflowIn(BaseModel):
@@ -91,9 +94,9 @@ class EarningsIn(BaseModel):
 
 class HoldingIn(BaseModel):
     symbol: str
-    name: str | None = None
+    name: Optional[str] = None
     quantity: float = 0.0
-    earnings_url: str | None = None
+    earnings_url: Optional[str] = None
 
 
 
@@ -219,6 +222,30 @@ def market_quote(symbol: str) -> dict:
         return fetch_yahoo_quote(symbol)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Quote fetch failed: {exc}") from exc
+
+
+@app.get("/api/market/detail/{symbol}")
+def market_detail(symbol: str) -> dict:
+    try:
+        return fetch_yahoo_detail(symbol)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Detail fetch failed: {exc}") from exc
+
+
+@app.get("/api/market/etf/{symbol}")
+def market_etf_detail(symbol: str) -> dict:
+    try:
+        return fetch_yahoo_etf_detail(symbol)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"ETF detail fetch failed: {exc}") from exc
+
+
+@app.get("/api/market/history/{symbol}")
+def market_history(symbol: str, range: str = "1y") -> dict:
+    try:
+        return fetch_yahoo_history(symbol, range)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"History fetch failed: {exc}") from exc
 
 
 @app.post("/api/broker/parse_csv")
